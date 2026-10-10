@@ -18,8 +18,8 @@ import android.view.View
 import android.view.WindowManager
 
 /**
- * Draws the floating bubble over other apps while it is on. The bubble mirrors [DictationState]:
- * grey idle, red recording, amber processing. Tap starts or stops [RecordingService]; drag moves it.
+ * Draws the floating bubble over other apps while an editable field has focus, as reported by
+ * [InsertionService]. The bubble mirrors [DictationState]: idle, recording, processing. Tap starts or stops [RecordingService]; drag moves it.
  * Having a visible overlay window is what lets this app start the microphone service from the background.
  */
 class OverlayService : Service() {
@@ -102,7 +102,13 @@ class OverlayService : Service() {
     }
 
     private fun render() {
-        bubble?.setPhase(DictationState.phase)
+        val view = bubble ?: return
+        val phase = DictationState.phase
+        view.setPhase(phase)
+        // Shown only while an editable field has focus, and until a dictation in progress is finished.
+        // With the accessibility service off, focus is unknown and the bubble stays up.
+        val show = phase != Phase.IDLE || InsertionService.editableFocused != false
+        view.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     override fun onDestroy() {

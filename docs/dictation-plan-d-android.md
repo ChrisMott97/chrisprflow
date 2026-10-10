@@ -222,3 +222,80 @@ never reaches the upload step.
 
 **For D4.** The bubble does not survive a reboot until the app is opened once (no boot receiver). D4 should show the bubble
 only while an editable field has focus; `OverlayService` is where the visibility switch belongs.
+
+### D4: built (2026-10-10). Needs Chris's checks in WhatsApp, Slack, Obsidian and Samsung Messages, and one spoken run
+
+**Built** (worktree branch `worktree-d4-android`, `android/`, versionName `d4`).
+- `InsertionService`: the accessibility service. It asks the system which field has input focus after focus, click and window
+  events (the event content is not used), and publishes "an editable, non-password field has focus".
+- `OverlayService` shows the bubble only while that is true, or while a recording is being made or processed, so it can always be
+  stopped. With the accessibility service off, the bubble stays visible everywhere as in D3 and the text goes to the clipboard.
+- `RecordingService` hands the result to `InsertionService.insert`, which tries three paths in order:
+  1. **Direct.** Read text and selection, splice (`Splice`, 9 unit tests), `ACTION_SET_TEXT`, then `ACTION_SET_SELECTION`.
+     It checks that the field really changed; if not, it moves on.
+  2. **Paste.** Text to the clipboard, then `ACTION_PASTE`.
+  3. **Clipboard.** Text left on the clipboard and a notification posted. The notification now appears only on this path.
+- The status line says "Inserted", "Pasted" or "Copied to clipboard". Logcat (tag `Dictation`) gets one line per dictation with the
+  app, the path and the field's type. Never the text.
+- Settings has a button showing whether insertion is on; it opens the Accessibility settings.
+- The accessibility service starts the bubble service when it connects, which the system does at boot. Not tested with a reboot.
+
+**Three things that differ from the plan as written. Chris should know about each.**
+1. **The direct path is used only where it cannot lose anything.** `ACTION_SET_TEXT` writes plain text over the whole field. In a
+   rich-text web editor this was seen to strip the formatting: `<b>Bold</b> and <i>italic</i> text` came back as plain text. Gmail's
+   body and Obsidian are editors of that kind. So: in web content (Chrome and any WebView) only a real `<input>` gets the direct path;
+   a `<textarea>` cannot be told apart from a rich editor, so both are pasted. In native fields, text carrying formatting spans
+   (bold, links, mentions) is pasted. Fields over 10,000 characters are pasted. Paste inserts at the cursor and keeps everything.
+2. **The service is declared `isAccessibilityTool="true"`.** Without it Gmail's compose screen hides its fields from the service
+   (Android's "accessibility data sensitive" protection): no bubble and no insertion there. With it, both work. It also means the
+   service can see screens that other apps mark as sensitive. It still reads only the focused field, only at the moment of inserting.
+   This is the same declaration the plan's Advanced Protection note refers to. Fine for a personal sideloaded app; it would not pass
+   Play review. To undo, delete the one line in `res/xml/insertion_service.xml`.
+3. **A space is added in front of the text** when it would otherwise run into the previous word ("Done." + "Next" gives
+   "Done. Next"). Not in the plan; without it two dictations in a row join up.
+
+**Per-app results** (phone `R3CX80C28AE`, Android 16, driven over adb with the debug hook below, not by voice):
+
+| App | Field | Path | Result |
+|---|---|---|---|
+| Chrome, web form | `<input>` | direct | Text and cursor correct, twice in a row |
+| Chrome, web form | `<textarea>` | paste | Inserted at a mid-text cursor |
+| Chrome, web form | rich editor (`contenteditable`) | paste | Formatting kept, cursor after the text |
+| Chrome, web form | password | none | Bubble hidden, field untouched, text on clipboard |
+| Gmail | Subject | direct | Correct |
+| Gmail | Body | paste | Two dictations in a row, spaced correctly |
+| Google Messages | Message box | direct | Two dictations in a row |
+| This app | URL field | direct | Start, middle and end of text |
+| This app | Token field | none | Bubble hidden, field untouched |
+| Samsung Messages | | not tested | It is not the default SMS app (Google Messages is) and asks to become it |
+| WhatsApp, Slack, Obsidian | | not tested | They open onto real chats and notes; left for Chris |
+
+Also verified: the bubble is hidden on the home screen and appears when a field takes focus; tapping it inside Chrome starts the
+microphone service (`isForeground=true types=0x80`), a second tap stops it, and Chrome keeps focus throughout.
+
+**For Chris to check.**
+1. One spoken dictation into any app. Every insertion above used test text, not speech.
+2. WhatsApp, Slack, Obsidian (and Samsung Messages if wanted): dictate once in each, then run
+   `adb logcat -d -s Dictation:I` and copy the `path=` of each line into the table. Obsidian should say `path=PASTE`.
+3. Battery set to Unrestricted for the app. I did not change it.
+4. Reboot once and check the bubble returns without opening the app.
+
+**Done to the phone during this session.**
+- The accessibility service was switched on through adb, by adding it to the existing list. ScreenZen and Bitwarden stay on. Chris
+  did not see Android's consent screen for it. Switch it off in Settings > Accessibility > Installed apps if that is not wanted.
+- The clipboard, and Gboard's clipboard history, hold test strings ("pw test", "Body sentence two." and similar).
+- Chrome has a leftover tab on `localhost:8765`. Google Messages may show an empty conversation with "000". A Gmail test draft was
+  discarded.
+
+**Fixed on the way.** The token field in Settings was never masked: `setSingleLine()` after the password input type removes the
+masking. It is now a real password field, which is also what keeps the insertion service away from it.
+
+**Debug hook.** Debug builds have `DebugInsertReceiver`: focus a field, then
+`adb shell am broadcast -n app.dictation/.DebugInsertReceiver --es text "hello"` inserts as a dictation would. It requires the
+`DUMP` permission, which the adb shell has and ordinary apps cannot get.
+
+**Known limits.**
+- The paste path leaves the dictation on the clipboard, and so in Gboard's clipboard history.
+- If an app accepts `ACTION_SET_TEXT`, changes nothing for half a second, then applies it late, the text would be inserted twice
+  (once directly, once pasted). Not seen.
+- Samsung may still stop the service if battery use is not Unrestricted.

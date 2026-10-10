@@ -20,8 +20,8 @@ android {
         applicationId = "app.dictation"
         minSdk = 34
         targetSdk = 36
-        versionCode = 2
-        versionName = "d2"
+        versionCode = 4
+        versionName = "d4"
         val baseUrl = local.getProperty("dictation.baseUrl", "https://dictation.chrisamott97.workers.dev")
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }

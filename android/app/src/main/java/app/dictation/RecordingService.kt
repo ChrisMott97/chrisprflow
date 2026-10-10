@@ -5,8 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -18,8 +16,9 @@ import java.util.concurrent.Executors
 
 /**
  * Microphone foreground service. START records, STOP (or the 10 minute cap) ends the recording,
- * trims silence, uploads, puts the text on the clipboard and posts a notification. After a
- * successful upload it retries recordings saved by earlier failures.
+ * trims silence, uploads and hands the text to [InsertionService], which inserts it into the focused
+ * field or leaves it on the clipboard, in which case a notification is posted. After a successful
+ * upload it retries recordings saved by earlier failures.
  */
 class RecordingService : Service() {
     private val recorder = Recorder()
@@ -91,13 +90,17 @@ class RecordingService : Service() {
                     DictationState.update(Phase.IDLE, "No speech found")
                     postResult("No speech found")
                 } else {
-                    copy(outcome.text)
+                    val path = InsertionService.insert(this, outcome.text)
+                    val what = when (path) {
+                        InsertPath.DIRECT -> "Inserted"
+                        InsertPath.PASTE -> "Pasted"
+                        InsertPath.CLIPBOARD -> "Copied to clipboard"
+                    }
                     DictationState.update(
-                        Phase.IDLE,
-                        if (outcome.cleaned) "Copied to clipboard" else "Copied (cleanup skipped)",
-                        outcome.text,
+                        Phase.IDLE, if (outcome.cleaned) what else "$what (cleanup skipped)", outcome.text,
                     )
-                    postResult(outcome.text)
+                    // The notification is for text that did not reach a field.
+                    if (path == InsertPath.CLIPBOARD) postResult(outcome.text) else cancelResult()
                 }
                 retryPending()
             }
@@ -150,11 +153,6 @@ class RecordingService : Service() {
         super.onDestroy()
     }
 
-    private fun copy(text: String) {
-        val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        cm.setPrimaryClip(ClipData.newPlainText("dictation", text))
-    }
-
     private fun ensureChannels() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
@@ -199,6 +197,10 @@ class RecordingService : Service() {
                 .setContentIntent(open())
                 .build(),
         )
+    }
+
+    private fun cancelResult() {
+        getSystemService(NotificationManager::class.java).cancel(RESULT_ID)
     }
 
     private fun notify(id: Int, n: Notification) {

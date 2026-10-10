@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- isAccessibilityTool: without it, apps that mark their screens as sensitive to accessibility
+     services (Gmail's compose screen does) hide their fields, and neither the bubble nor insertion works there. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeViewFocused|typeViewClicked|typeWindowStateChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/insertion_description"
+    android:isAccessibilityTool="true"
+    android:notificationTimeout="100" />

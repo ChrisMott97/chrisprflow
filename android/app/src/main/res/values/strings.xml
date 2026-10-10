@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="insertion_description">Shows the dictation bubble while a text field has focus and types the dictated text into that field. It reads the field only at the moment of inserting, keeps nothing, and never touches password fields.</string>
+</resources>

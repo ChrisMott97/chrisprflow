@@ -17,6 +17,7 @@ import android.widget.TextView
 /** Backend URL and API token. The token is stored encrypted and never shown again. */
 class SettingsActivity : Activity() {
     private lateinit var bubble: Switch
+    private lateinit var insertion: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,8 +38,8 @@ class SettingsActivity : Activity() {
         val hasToken = Settings.token(this) != null
         val token = EditText(this).apply {
             hint = if (hasToken) "Token saved. Type to replace" else "Android token"
+            // The password type is already single line. setSingleLine() after it would remove the masking.
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setSingleLine()
         }
         bubble = Switch(this).apply {
             text = "Floating bubble"
@@ -59,6 +60,11 @@ class SettingsActivity : Activity() {
                 }
             }
         }
+        insertion = Button(this).apply {
+            setOnClickListener {
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+        }
         val save = Button(this).apply {
             text = "Save"
             setOnClickListener {
@@ -72,6 +78,7 @@ class SettingsActivity : Activity() {
         root.addView(TextView(this).apply { text = "Token"; setPadding(0, pad, 0, 0) })
         root.addView(token, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         root.addView(bubble, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        root.addView(insertion, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         root.addView(save, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         setContentView(root)
     }
@@ -83,5 +90,7 @@ class SettingsActivity : Activity() {
             bubble.isChecked = false
         }
         OverlayService.sync(this)
+        insertion.text =
+            if (InsertionService.enabled) "Insert into fields: on" else "Insert into fields: off (open Accessibility)"
     }
 }
