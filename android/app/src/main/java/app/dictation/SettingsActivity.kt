@@ -1,6 +1,8 @@
 package app.dictation
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -9,10 +11,13 @@ import android.view.WindowInsets
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.Switch
 import android.widget.TextView
 
 /** Backend URL and API token. The token is stored encrypted and never shown again. */
 class SettingsActivity : Activity() {
+    private lateinit var bubble: Switch
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val pad = (24 * resources.displayMetrics.density).toInt()
@@ -35,6 +40,25 @@ class SettingsActivity : Activity() {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             setSingleLine()
         }
+        bubble = Switch(this).apply {
+            text = "Floating bubble"
+            isChecked = Settings.bubbleEnabled(this@SettingsActivity)
+            setPadding(0, pad, 0, pad)
+            setOnCheckedChangeListener { _, on ->
+                Settings.setBubbleEnabled(this@SettingsActivity, on)
+                if (on && !android.provider.Settings.canDrawOverlays(this@SettingsActivity)) {
+                    // Chris grants "Appear on top" here; onResume starts the bubble when he returns.
+                    startActivity(
+                        Intent(
+                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName"),
+                        ),
+                    )
+                } else {
+                    OverlayService.sync(this@SettingsActivity)
+                }
+            }
+        }
         val save = Button(this).apply {
             text = "Save"
             setOnClickListener {
@@ -47,7 +71,17 @@ class SettingsActivity : Activity() {
         root.addView(url, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         root.addView(TextView(this).apply { text = "Token"; setPadding(0, pad, 0, 0) })
         root.addView(token, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        root.addView(bubble, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         root.addView(save, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         setContentView(root)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Back from the permission screen without granting: the switch must not claim the bubble is on.
+        if (bubble.isChecked && !android.provider.Settings.canDrawOverlays(this)) {
+            bubble.isChecked = false
+        }
+        OverlayService.sync(this)
     }
 }

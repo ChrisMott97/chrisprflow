@@ -16,6 +16,14 @@ object Settings {
     private const val KEY_ALIAS = "dictation-token"
     private const val K_TOKEN = "token"
     private const val K_URL = "baseUrl"
+    private const val K_BUBBLE = "bubble"
+
+    fun bubbleEnabled(ctx: Context): Boolean =
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(K_BUBBLE, false)
+
+    fun setBubbleEnabled(ctx: Context, on: Boolean) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(K_BUBBLE, on).apply()
+    }
 
     fun baseUrl(ctx: Context): String =
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(K_URL, null)

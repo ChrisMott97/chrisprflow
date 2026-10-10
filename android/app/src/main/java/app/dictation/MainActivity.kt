@@ -74,6 +74,11 @@ class MainActivity : Activity() {
         render()
     }
 
+    override fun onResume() {
+        super.onResume()
+        OverlayService.sync(this)
+    }
+
     override fun onStop() {
         DictationState.remove(listener)
         super.onStop()

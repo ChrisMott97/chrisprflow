@@ -192,3 +192,28 @@ the app started the service with `isForeground=true types=0x80` (microphone), St
 **For D3.** `DictationState` (phase, status, last result, listeners) is what a bubble should observe;
 `RecordingService.start/stop(ctx)` are the entry points. A fresh worktree needs a `local.properties` with at least `sdk.dir`;
 agent shells cannot copy the main one (blocked), so write one by hand.
+
+### D3: built (2026-10-10). Needs Chris's real-speech check from inside another app
+
+**Built** (worktree branch `worktree-d3-android`, `android/`, package `app.dictation`).
+- `OverlayService`: foreground service (type `specialUse`, min-importance notification "Dictation bubble is on") that draws a
+  56dp round bubble with `TYPE_APPLICATION_OVERLAY`. It observes `DictationState`: grey idle, red recording, amber processing.
+  Tap starts or stops `RecordingService`; tap is ignored while processing; dragging moves it (clamped to the screen) and
+  the position is remembered. Without the mic permission a tap opens the app. The result goes to the clipboard as before.
+- `Settings.bubbleEnabled` and a "Floating bubble" switch on `SettingsActivity`. Turning it on without "Appear on top" opens
+  that permission screen; coming back without granting flips the switch off. `OverlayService.sync(ctx)` starts or stops the
+  bubble to match the switch and the permission; `MainActivity` and `SettingsActivity` call it in `onResume`.
+- Manifest: `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE_SPECIAL_USE`.
+
+**Key finding.** A visible overlay window makes the app eligible to start the microphone service from the background on
+Android 16 (`getFgsAllowStart=UID_VISIBLE`). No transparent activity is needed for the bubble.
+
+**Verified on the phone (`R3CX80C28AE`):** with the overlay permission granted via `appops` and the switch turned on in the UI,
+the bubble appeared over the home screen with the app closed. Tapping it gave `RecordingService isForeground=true types=0x80`;
+tapping again stopped it and the service ended. Build and unit tests pass.
+
+**Not verified:** speaking and pasting the result in another app (I cannot speak into the phone); dragging; bubble colours
+while recording and processing (only seen idle in a screenshot); the bubble coming back after a reboot.
+
+**For D4.** The bubble does not survive a reboot until the app is opened once (no boot receiver). D4 should show the bubble
+only while an editable field has focus; `OverlayService` is where the visibility switch belongs.
