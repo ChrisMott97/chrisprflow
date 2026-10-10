@@ -104,3 +104,27 @@ Done 2026-10-10.
 - Deploys were run by Chris (the auto-mode classifier blocks agent production deploys).
 - `@cloudflare/workers-types` is pinned to v5 because wrangler 4.149 requires it.
 - Chris still needs to set the five secrets on the real Worker (see "After this session").
+
+### Handover: starting the next sessions
+
+S0 is complete and its prerequisites are met. The five Worker secrets are set (names confirmed with
+`wrangler secret list`), so A1 and B1 are unblocked.
+
+Known gap for A1: the real Worker's auth only accepts `mock-token` in mock mode. A1 must add the
+per-client token check (`MAC_TOKEN`, `ANDROID_TOKEN`, `SYNC_TOKEN`) and the real pipeline.
+
+Start each session fresh, in its own folder, with this prompt (change the file and session name):
+
+```
+Read docs/dictation-plan-contract.md and docs/dictation-plan-<file>.md. Do session <ID> only.
+When it is done, fill in the Status section for <ID> and stop.
+```
+
+| Session | Plan file | Folder | Talks to |
+|---|---|---|---|
+| A1 | `dictation-plan-a-backend.md` | `backend/` | Real pipeline |
+| B1 | `dictation-plan-b-prompt.md` | `prompt/` | Anthropic key in shell |
+| C1 | `dictation-plan-c-mac.md` | `mac/` | Mock URL |
+| D1 | `dictation-plan-d-android.md` | `android/` | Mock URL |
+
+On the Pro plan, run one or two at once (for example A1 with C1). See the overview.
