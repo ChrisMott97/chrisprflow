@@ -110,5 +110,41 @@ declared as accessibility tools. If Chris has that mode on, this stage cannot wo
 
 ## Status
 
-Not started. Each session writes here: what was built, how to build and install, which library
+Each session writes here: what was built, how to build and install, which library
 runs the VAD and why, the per-app results from D4, and anything the next session must know.
+
+### D1: done (2026-10-10)
+
+**Built.** `android/`, Kotlin, one module, no third-party dependencies (plain Views,
+`HttpURLConnection`, `org.json`). Package `app.dictation`, minSdk 34, targetSdk 36.
+- `MainActivity`: Record/Stop button, status line, last result, Copy button. Asks for the mic
+  permission on first tap. Discards recordings under 0.5 s.
+- `Recorder`: `AudioRecord`, 16 kHz mono 16-bit PCM. `Wav`: wraps PCM in a 44-byte header.
+- `DictationApi`: `POST /v1/dictate` with `audio/wav`, `Authorization: Bearer`, `X-Client: android`.
+  401/413/415 (any 4xx) are fatal: error shown, audio dropped. 5xx, timeout and no network are
+  retryable: the WAV is saved in `filesDir/pending/<millis>.wav` and the error shown. Retrying is D2.
+- `empty: true` shows "No speech found". Otherwise `text` is shown and copied to the clipboard.
+
+**Build and install.** No JDK is on PATH; use Android Studio's:
+```
+cd android
+JAVA_HOME="$HOME/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew assembleDebug -q
+adb -s R3CX80C28AE install -r app/build/outputs/apk/debug/app-debug.apk
+```
+AGP 8.13.2, Kotlin 2.0.21, Gradle 8.13 (wrapper checked in). `android/local.properties`
+(git-ignored) holds `sdk.dir`, `dictation.baseUrl`, `dictation.token`; D1 uses the mock URL and
+`mock-token`. A fresh worktree needs its own copy of that file. Missing keys fall back to the mock.
+
+**Verified on the phone** (Galaxy, serial `R3CX80C28AE`): installed over USB, launched, and drove
+Record then Stop with `adb shell input tap`. Screen then showed "Copied to clipboard" and
+"This is a mock dictation.". Not verified: a human speaking, and reading the clipboard back
+(Android blocks background clipboard reads from adb). Chris should do one real tap-speak-paste check.
+
+**VAD.** Not in D1. D2 must check the current supported way to run Silero on Android.
+
+**For D2.**
+- Targeting SDK 36 forces edge-to-edge; `MainActivity` pads for system bar insets itself.
+- The phone first showed `unauthorized` in `adb devices` until the USB debugging prompt was accepted.
+- Recording currently lives in the Activity; D2 moves it to a foreground service. `Recorder` and
+  `DictationApi` are free of Activity references and can be reused as is.
+- No tests exist yet.
