@@ -98,5 +98,23 @@ a short and a long dictation.
 
 ## Status
 
-Not started. Each session writes here: what was built, how to build and run, the package chosen
-for the VAD and why, measured latency, and anything the next session must know.
+**C1 done 2026-10-10. Chris confirmed the hotkey test by hand once the permissions were granted.**
+- Built: menu bar app (mic icon, Quit), right Option hold-to-talk via a listen-only CGEvent tap
+  (keycode 61, device mask 0x40 so left Option is ignored), AVAudioEngine capture converted to 16 kHz
+  mono Int16 and wrapped as WAV, under 0.5 s discarded, `POST /v1/dictate` with `X-Client: mac`,
+  paste via clipboard (transient + concealed types, Cmd-V, old clipboard restored after 0.5 s),
+  notifications for 401/413/415, retryable failures saved to `~/Library/Application Support/Dictation/Pending/`.
+- Layout: Swift package in `mac/` (no Xcode project, xcodegen is not installed). `mac/build.sh` assembles
+  and signs `mac/build/Dictation.app`. `swift test -q` passes (WAV header test).
+- Checked: build clean; the exact request shape (headers, WAV body) against the mock returns the mock text,
+  bad token returns 401. Not checkable by an agent: hotkey, microphone, paste, clipboard restore.
+- **Signing: no codesigning identity exists on this Mac** (`security find-identity` found 0), so the build is
+  ad-hoc signed and macOS will drop Microphone/Accessibility/Input Monitoring grants on every rebuild.
+  Fix: Xcode, Settings, Accounts, sign in, Manage Certificates, add Apple Development. `build.sh` picks it up.
+- To run: `mac/build.sh && open mac/build/Dictation.app`. Grant Microphone, Accessibility and Input
+  Monitoring when asked, then relaunch once (the hotkey tap only starts after the grant).
+- Config: `config.json` is created with the mock URL and `mock-token`. C2 moves the token to the Keychain.
+- VAD package and latency: not applicable until C2.
+- For C2/C3: `AppDelegate.send` holds the upload and paste logic; `Recorder.stop()` returns `[Int16]?`
+  (nil means under 0.5 s), which is the place to run VAD. Pending WAVs have no retry yet (C3).
+- Done-when check: passed (Chris, by hand, against the mock).
