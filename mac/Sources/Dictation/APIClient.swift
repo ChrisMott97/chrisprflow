@@ -18,15 +18,16 @@ enum DictateError: Error {
 struct APIClient {
     let config: Config
 
-    func dictate(wav: Data) async throws -> DictateResponse {
+    func dictate(audio: Data, contentType: String) async throws -> DictateResponse {
+        guard !config.token.isEmpty else { throw DictateError.fatal("No API token. Use the menu item Set API Token...") }
         guard let url = URL(string: config.baseURL + "/v1/dictate") else { throw DictateError.fatal("Bad base URL in config.json") }
         var req = URLRequest(url: url, timeoutInterval: 60)
         req.httpMethod = "POST"
         req.setValue("Bearer \(config.token)", forHTTPHeaderField: "Authorization")
-        req.setValue("audio/wav", forHTTPHeaderField: "Content-Type")
+        req.setValue(contentType, forHTTPHeaderField: "Content-Type")
         req.setValue("mac", forHTTPHeaderField: "X-Client")
         let data: Data, resp: URLResponse
-        do { (data, resp) = try await URLSession.shared.upload(for: req, from: wav) }
+        do { (data, resp) = try await URLSession.shared.upload(for: req, from: audio) }
         catch { throw DictateError.retryable(error.localizedDescription) }
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         switch status {

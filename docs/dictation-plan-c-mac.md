@@ -118,3 +118,28 @@ a short and a long dictation.
 - For C2/C3: `AppDelegate.send` holds the upload and paste logic; `Recorder.stop()` returns `[Int16]?`
   (nil means under 0.5 s), which is the place to run VAD. Pending WAVs have no retry yet (C3).
 - Done-when check: passed (Chris, by hand, against the mock).
+
+**C2 done 2026-10-10. Chris confirmed the real-backend check by hand: the long-pause transcript was clean.**
+- Built: Silero VAD v6.2.1 via FluidAudio 0.17.7 (Core ML, the maintained Swift route; pinned in `mac/Package.swift`,
+  platform raised to macOS 14). Runs on the finished recording in `SilenceTrimmer`. Gaps over 1.0 s (`maxSilence`)
+  are cut to 0.3 s (`keptSilence`), taken from the original audio split around the speech; leading and trailing
+  silence follow the same rule. No speech, or trimmed audio under 0.5 s, is discarded. If the model is not loaded
+  yet or VAD throws, the full recording is sent.
+- Debug switch: `"debugAudio": true` in `config.json` saves `<ts>-before.wav` and `<ts>-after.wav` to
+  `~/Library/Application Support/Dictation/Debug/`.
+- Config: defaults to the real URL; a C1 file with the mock URL is switched to the real one on first load. The
+  token is no longer in the file: Keychain, set via the new menu item "Set API Token..." (secure field). The mock
+  URL still falls back to `mock-token`. Missing token gives a notification, no request.
+- FLAC: `FlacEncoder` uses AVAudioFile (system, simple). Sent as `audio/flac`; falls back to WAV on any failure.
+  Accepted by the mock (checked). Failed uploads are still saved as WAV in `Pending/`.
+- Tests: `swift test` 7 pass. Includes real VAD on `docs/sample.wav` + 10 s noise gap + the clip again: two
+  spans found, 14.3 s trimmed to 5.1 s. Build signed with the Apple Development identity now present.
+- First launch downloads the Silero model (HuggingFace, cached in `~/Library/Application Support/FluidAudio/`);
+  the first dictation before it finishes goes untrimmed. VAD run time on a 14 s clip was a few hundred ms in the test.
+- Latency: each dictation appends `release_to_paste_ms`, `vad_ms`, audio and trimmed seconds to
+  `~/Library/Application Support/Dictation/latency.log`. **Not measured**: it needs the hotkey, mic and real token.
+- Chris to do: relaunch, paste the Mac token via the menu, dictate with a 10 s pause in the middle (set
+  `debugAudio` to listen to the cuts), then read `latency.log` for a short and a long dictation.
+- **Latency measured by Chris, real backend, FLAC (key release to paste):** 2.3 s dictation 1.68 s (first, cold);
+  4.4 s dictation 1.12 s; 13.5 s recording with a long pause, trimmed to 4.3 s, 1.36 s. VAD cost 13 to 30 ms.
+  Trimming removed about 9 s of pause and the upload stayed small, so a long pause costs nothing extra.
