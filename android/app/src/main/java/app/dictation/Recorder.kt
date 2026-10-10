@@ -33,9 +33,23 @@ class Recorder {
             val buf = ByteArray(minBuf)
             while (running) {
                 val n = rec.read(buf, 0, buf.size)
-                if (n > 0) synchronized(pcm) { pcm.write(buf, 0, n) }
+                if (n > 0) {
+                    synchronized(pcm) { pcm.write(buf, 0, n) }
+                    DictationState.level = rms(buf, n)
+                }
             }
+            DictationState.level = 0f
         }.also { it.start() }
+    }
+
+    private fun rms(buf: ByteArray, n: Int): Float {
+        var sum = 0.0
+        val samples = n / 2
+        for (i in 0 until samples) {
+            val s = ((buf[2 * i + 1].toInt() shl 8) or (buf[2 * i].toInt() and 0xFF)).toShort()
+            sum += s * s.toDouble()
+        }
+        return if (samples == 0) 0f else (Math.sqrt(sum / samples) / Short.MAX_VALUE).toFloat()
     }
 
     /** Stops recording and returns the raw PCM bytes. */

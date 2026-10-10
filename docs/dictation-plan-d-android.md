@@ -215,5 +215,10 @@ tapping again stopped it and the service ended. Build and unit tests pass.
 **Not verified:** speaking and pasting the result in another app (I cannot speak into the phone); dragging; bubble colours
 while recording and processing (only seen idle in a screenshot); the bubble coming back after a reboot.
 
+**Bubble animation (follow-up).** `BubbleView` replaces the plain icon. Idle: mic on slate. Recording: teal with five bars driven by the
+live mic RMS (`Recorder` publishes it as `DictationState.level`, no listener notification). Processing: dimmed mic inside a spinning
+arc on a blue-grey. Seen on the phone: idle and recording. The spinner is drawn but not yet seen, because a silent test recording
+never reaches the upload step.
+
 **For D4.** The bubble does not survive a reboot until the app is opened once (no boot receiver). D4 should show the bubble
 only while an editable field has focus; `OverlayService` is where the visibility switch belongs.

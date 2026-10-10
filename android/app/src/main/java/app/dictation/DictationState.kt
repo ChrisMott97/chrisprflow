@@ -11,6 +11,9 @@ object DictationState {
     @Volatile var lastResult = ""
         private set
 
+    /** Live mic level, 0..1 (RMS). Read by the bubble each frame; changing it does not notify listeners. */
+    @Volatile var level = 0f
+
     private val listeners = java.util.concurrent.CopyOnWriteArraySet<() -> Unit>()
 
     fun add(l: () -> Unit) { listeners.add(l) }

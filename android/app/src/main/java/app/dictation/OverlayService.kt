@@ -10,15 +10,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.drawable.GradientDrawable
 import android.os.IBinder
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageView
 
 /**
  * Draws the floating bubble over other apps while it is on. The bubble mirrors [DictationState]:
@@ -27,7 +24,7 @@ import android.widget.ImageView
  */
 class OverlayService : Service() {
     private lateinit var wm: WindowManager
-    private var bubble: ImageView? = null
+    private var bubble: BubbleView? = null
     private lateinit var params: WindowManager.LayoutParams
     private val listener: () -> Unit = { bubble?.post { render() } }
 
@@ -52,10 +49,7 @@ class OverlayService : Service() {
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         val d = resources.displayMetrics.density
         val size = (BUBBLE_DP * d).toInt()
-        val pad = (14 * d).toInt()
-        val view = ImageView(this).apply {
-            setImageResource(R.drawable.ic_mic)
-            setPadding(pad, pad, pad, pad)
+        val view = BubbleView(this).apply {
             elevation = 6 * d
             contentDescription = "Dictate"
         }
@@ -108,17 +102,7 @@ class OverlayService : Service() {
     }
 
     private fun render() {
-        val v = bubble ?: return
-        val color = when (DictationState.phase) {
-            Phase.IDLE -> Color.parseColor("#546E7A")
-            Phase.RECORDING -> Color.parseColor("#D32F2F")
-            Phase.PROCESSING -> Color.parseColor("#F9A825")
-        }
-        v.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(color)
-        }
-        v.alpha = if (DictationState.phase == Phase.IDLE) 0.7f else 1f
+        bubble?.setPhase(DictationState.phase)
     }
 
     override fun onDestroy() {
