@@ -119,7 +119,7 @@ a short and a long dictation.
   (nil means under 0.5 s), which is the place to run VAD. Pending WAVs have no retry yet (C3).
 - Done-when check: passed (Chris, by hand, against the mock).
 
-**C2 built 2026-10-10. Needs Chris's final check with the real token (the agent never sees it).**
+**C2 done 2026-10-10. Chris confirmed the real-backend check by hand: the long-pause transcript was clean.**
 - Built: Silero VAD v6.2.1 via FluidAudio 0.17.7 (Core ML, the maintained Swift route; pinned in `mac/Package.swift`,
   platform raised to macOS 14). Runs on the finished recording in `SilenceTrimmer`. Gaps over 1.0 s (`maxSilence`)
   are cut to 0.3 s (`keptSilence`), taken from the original audio split around the speech; leading and trailing
@@ -143,4 +143,3 @@ a short and a long dictation.
 - **Latency measured by Chris, real backend, FLAC (key release to paste):** 2.3 s dictation 1.68 s (first, cold);
   4.4 s dictation 1.12 s; 13.5 s recording with a long pause, trimmed to 4.3 s, 1.36 s. VAD cost 13 to 30 ms.
   Trimming removed about 9 s of pause and the upload stayed small, so a long pause costs nothing extra.
-  Whether the 13.5 s transcript was clean (no invented words) is for Chris to confirm; the log cannot show it.
