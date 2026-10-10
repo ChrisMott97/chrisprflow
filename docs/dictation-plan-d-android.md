@@ -299,3 +299,31 @@ masking. It is now a real password field, which is also what keeps the insertion
 - If an app accepts `ACTION_SET_TEXT`, changes nothing for half a second, then applies it late, the text would be inserted twice
   (once directly, once pasted). Not seen.
 - Samsung may still stop the service if battery use is not Unrestricted.
+
+### D4 follow-up (2026-10-10): paste is now the first path, after a crash in Google Keep
+
+**The bug.** Chris dictated into a Google Keep note. The text went in, then pressing Enter walked the cursor through the dictated
+line letter by letter, and Keep crashed: `IndexOutOfBoundsException: setSpan (271 ... 271) ends beyond length 270` in Keep's
+`changelogeditor.EditTextView`. The insertion had taken the direct path. Keep keeps its own copy of the note's text, and
+`ACTION_SET_TEXT` changed the field without that copy knowing. Keep's field is an ordinary native text box with no formatting, so
+nothing can tell it apart in advance from a field where the direct path is safe.
+
+**The fix. The order of the paths is now paste, then direct, then clipboard.** This replaces the order given in the plan and in
+the D4 section above. Paste is what the user would do by hand, so every app keeps its own state right. A paste counts only if the
+field is then seen to change (when its text can be read). The direct splice is kept as the fallback for a field that refuses a
+paste, with the same guards as before. Every row of the D4 table that says "direct" now takes "paste"; re-run after the change:
+Keep and this app's URL field, both `path=PASTE`.
+
+**Verified on the phone** in a new Keep note: two dictations with Enter presses and typing between and after them. Both
+`path=PASTE`, the text and the cursor were right, and Keep did not crash. The note was then deleted.
+
+**Cost.** Every dictation now lands on the clipboard, and in Gboard's clipboard history, replacing whatever was there.
+
+**"Thank you" added to the end of a dictation.** Whisper tends to invent a closing phrase when a recording ends in silence. The
+trimmer used to pass a pause at the end of under 1 s untouched and leave 0.3 s of a longer one. `SilenceTrimmer` now cuts silence at
+the very start and end to 0.2 s whatever its length (7 unit tests). Silence between words is unchanged. Not verified by voice.
+
+**To do, outside this workstream.**
+- If "Thank you" still appears: the sure fix is in the backend, dropping a closing phrase from the transcript when it is one of
+  Whisper's known inventions ("Thank you.", "Thanks for watching."). That belongs to workstream A or B.
+- The Mac client has the same trimming rule and probably the same problem. That belongs to workstream C.

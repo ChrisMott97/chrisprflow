@@ -82,8 +82,10 @@ class InsertionService : AccessibilityService() {
     }
 
     /**
-     * Splices [text] in at the cursor with ACTION_SET_TEXT. False when the field cannot be read or
-     * set, or when rewriting the whole field could lose something (formatting, or a very long text).
+     * Splices [text] in at the cursor with ACTION_SET_TEXT. Only tried when a paste did not work,
+     * because rewriting a whole field behind an app's back can break the app: Google Keep keeps its
+     * own copy of the text and crashed after one. False when the field cannot be read or set, or
+     * when the rewrite could lose something (formatting, or a very long text).
      */
     private fun insertDirect(text: String): Boolean {
         val node = target() ?: return false
@@ -128,15 +130,22 @@ class InsertionService : AccessibilityService() {
         }
     }
 
-    /** Puts [text] on the clipboard and pastes it at the cursor. The app does the insert, so nothing is lost. */
+    /**
+     * Puts [text] on the clipboard and pastes it at the cursor. This is the first choice: the app does
+     * the insert itself, exactly as when the user pastes, so its own idea of the text stays right.
+     * False when the app refuses the paste or the field is seen not to change.
+     */
     private fun paste(text: String): Boolean {
         val node = target() ?: return false
         if (!node.refresh() || node.isPassword) return false
-        val piece = Splice.spaced(shownText(node), node.textSelectionStart, text)
+        val before = shownText(node)
+        val piece = Splice.spaced(before, node.textSelectionStart, text)
         setClip(this, piece)
         Thread.sleep(CLIP_SETTLE_MS) // let the new clip reach the focused app
         node.refresh()
-        return node.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+        if (!node.performAction(AccessibilityNodeInfo.ACTION_PASTE)) return false
+        // A field whose text cannot be read cannot be checked; take the app's word for it.
+        return node.text == null || changedFrom(node, before)
     }
 
     private fun changedFrom(node: AccessibilityNodeInfo, before: String): Boolean {
@@ -191,15 +200,15 @@ class InsertionService : AccessibilityService() {
         }
 
         /**
-         * Gets [text] to the user by the best path that works: splice into the focused field, else
-         * clipboard and paste, else clipboard alone. Blocks briefly; call it off the main thread.
+         * Gets [text] to the user by the first path that works: clipboard and paste into the focused
+         * field, else splice it in directly, else clipboard alone. Blocks briefly; call it off the main thread.
          */
         fun insert(ctx: Context, text: String): InsertPath {
             val service = instance
             val path = when {
                 service == null -> InsertPath.CLIPBOARD
-                runCatching { service.insertDirect(text) }.getOrDefault(false) -> InsertPath.DIRECT
                 runCatching { service.paste(text) }.getOrDefault(false) -> InsertPath.PASTE
+                runCatching { service.insertDirect(text) }.getOrDefault(false) -> InsertPath.DIRECT
                 else -> InsertPath.CLIPBOARD
             }
             if (path == InsertPath.CLIPBOARD) setClip(ctx, text)
