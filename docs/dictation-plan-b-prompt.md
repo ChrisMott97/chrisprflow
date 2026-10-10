@@ -77,4 +77,16 @@ Pull the real raw transcripts from `GET /v1/history`, add the ones the prompt ha
 
 ## Status
 
-Not started.
+**B1 written 2026-10-10 but NOT yet run. It is blocked on `ANTHROPIC_API_KEY`, which was not set in the session's shell.**
+- Built in `prompt/`: `cleanup.md` (real prompt, one `{{DICTIONARY}}` marker; the transcript arrives in `<transcript>` tags
+  as `backend/src/cleanup.ts` already sends it), `cases.jsonl` (28 cases: 5 filler, 3 self-correction, 4 commands/lists,
+  3 dictionary, 5 instructions not to obey, 2 questions not to answer, 2 one-or-two-word, 2 already clean, 2 long of about
+  290 words), `run.ts` (plain `fetch`, no dependencies, Node 24 runs it directly), and the test line in `prompt/CLAUDE.md`.
+- The runner prints pass or fail with output, median latency for short (under 1000 chars) and long cases, and total tokens.
+  It also applies the backend's 0.5x to 1.5x length guard to each output. `--runs 3` repeats the set.
+- Pass rate, latency and any prompt changes: not measured yet. The prompt is a first draft.
+- Next: in a shell with the key set, run `cd prompt && node run.ts --runs 3`. Then start a new B1 session (or tell
+  this one) to tune the prompt until all three runs pass. If Haiku 5.5 will not pass the five "must not be obeyed"
+  cases, stop and report; the fallback model is Chris's call.
+- The dictionary lines in the test use the form `Term (mis-heard as: a, b)`. A2 should build the real list in that form,
+  or change the wording under "Preferred spellings" in `cleanup.md` to match.
