@@ -67,7 +67,9 @@ hand, because an agent cannot press a global hotkey and speak.
 3. If the trimmed audio is under 0.5 seconds, discard it.
 4. A debug switch that saves the audio before and after trimming, so the cut points can be
    listened to.
-5. Switch the config to the real URL and the Mac token. Move the token to the Keychain.
+5. Switch the config to the real URL. Read the token from the Keychain, and add a menu item
+   where Chris pastes it in. The agent never sees the production token, so Chris runs the final
+   check himself.
 6. Encode as FLAC before upload if that is simple with the system frameworks. Otherwise leave it
    as WAV.
 
@@ -88,7 +90,8 @@ a short and a long dictation.
 4. **Cap.** A recording stops itself at 10 minutes and is sent.
 5. **Retry.** Saved recordings from failed uploads are retried on the next successful request and
    at launch. A menu item shows how many are waiting.
-6. **Last result.** A menu item copies the last result, read from `GET /v1/history`.
+6. **Last result.** A menu item copies the last result. Keep it in memory from the last
+   response. Do not call `GET /v1/history`, which does not exist until session A2.
 7. Launch at login.
 
 **Done when** Chris has used it for a day without touching Wispr Flow.

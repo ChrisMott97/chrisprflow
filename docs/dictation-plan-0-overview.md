@@ -48,7 +48,7 @@ Each file carries the vault's frontmatter. It does no harm in the repo and can b
 | C1 | Mac: record, upload, paste, on the mock | S0 | Xcode, hotkey chosen, Mac permissions |
 | D1 | Android: record, upload, copy, on the mock | S0 | Android Studio, USB debugging |
 | A2 | Dictionary, history route, final prompt | A1, B1 | Nothing |
-| C2 | Mac silence trimming, real backend | C1, A1 | Copy the real URL into the contract |
+| C2 | Mac silence trimming, real backend | C1, A1 | Nothing |
 | D2 | Android tile, silence trimming, real backend | D1, A1 | Nothing |
 | E1 | Dictionary sync script | A2 | Read the dry-run output before the first real run |
 | C3 | Mac tap-to-toggle, cancel, indicator, retry | C2 | Nothing |
@@ -61,15 +61,17 @@ Each file carries the vault's frontmatter. It does no harm in the repo and can b
 
 1. **Before S0.** Create the repo. Copy the plan files into `docs/`. Create a Cloudflare account
    and run `npx wrangler login`.
-2. **Before A1 and B1.** Create the Groq and Anthropic API keys. Set a spend limit on each
-   account. Check the Groq free tier limits and the data retention setting on both. Put the keys
-   and three random client tokens in as Worker secrets.
+2. **After S0, before A1 and B1.** Create the Groq and Anthropic API keys. Set a spend limit on
+   each account. Check the data retention setting on both. Set the five Worker secrets, using
+   the commands in the S0 plan. This waits on S0 because the Worker has to exist first.
 3. **Before C1.** Install Xcode and sign in. Choose the hotkey. Grant Microphone and
    Accessibility when macOS asks.
 4. **Before D1.** Install Android Studio. Switch on USB debugging.
 5. **After C1 and D1.** Test each by hand. An agent cannot press a hotkey and speak.
-6. **After A1.** Copy the real URL from the backend plan's Status section into the contract.
-7. **After C2.** Use the Mac client for real. Judge Haiku 5.5's output and the latency. This is
+6. **After A1.** Run the smoke test against the real URL yourself:
+   `DICTATION_TOKEN=<your Mac token> docs/smoke.sh <real URL>`. An agent never holds a production
+   token, so it only tests locally.
+7. **After C2.** Paste the Mac token into the app. Use the Mac client for real. Judge Haiku 5.5's output and the latency. This is
    the point to decide whether anything in the design changes.
 8. **Before D3 and D4.** Grant the overlay permission, then the accessibility service.
 9. **After A2.** Decide when the dictionary sync runs. That is a vault decision.

@@ -25,10 +25,8 @@ sessions, A1 then A2.
 **Before this session, Chris does**
 
 - Create a Groq API key and an Anthropic API key. Set a spend limit on both accounts.
-- Run `npx wrangler secret put` for `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `MAC_TOKEN`,
-  `ANDROID_TOKEN` and `SYNC_TOKEN`, against the real environment and not `mock`. Each token is
-  its own random string from `openssl rand -hex 32`. Do this by hand so no production secret
-  passes through an agent.
+- Set the five secrets on the real Worker, using the commands in `dictation-plan-s0-setup.md`
+  under "After this session". Do this by hand so no production secret passes through an agent.
 - For local runs, fill in `backend/.dev.vars` with **different** values: made-up client tokens
   such as `dev-mac-token`, and a second Groq key and Anthropic key created only for development.
   An agent can end up seeing this file's contents, so it never holds a production value. The
@@ -36,8 +34,13 @@ sessions, A1 then A2.
 
 **Build**
 
-1. A second Wrangler environment for the real backend. The `mock` environment from S0 stays
-   deployed and unchanged.
+1. S0 already deployed two Workers from this codebase: `dictation` (the top level, `MODE` is
+   `real`) and `dictation-mock` (the `mock` environment). Build the pipeline behind `MODE` being
+   `real`. Leave the mock behaviour unchanged and keep it deployed.
+   **Create the D1 database** with `npx wrangler d1 create`, add its binding to the top level of
+   the Wrangler config, and keep the schema as migration files applied with
+   `npx wrangler d1 migrations apply`. Run `npx wrangler secret list` first to confirm the five
+   secrets exist. If any is missing, stop and tell Chris.
 2. Auth: compare the bearer token against the three token secrets.
 3. Size and type checks, returning the contract's `413` and `415`.
 4. **ASR.** Send the audio to Groq's transcription endpoint as multipart, with model
@@ -54,23 +57,31 @@ sessions, A1 then A2.
    `empty: true`.
 6. **Cleanup.** Call the Anthropic Messages API with model `claude-haiku-5-5`. The system prompt
    is the file `prompt/cleanup.md`, imported at build time as a text module. Workstream B owns
-   that file, so do not edit it. Until B1 lands it holds a placeholder. The transcript goes in the
-   user message inside `<transcript>` tags.
+   that file, so do not edit it. Until B1 lands it holds the placeholder S0 wrote. The file
+   contains the marker `{{DICTIONARY}}`. In A1 there is no dictionary yet, so replace the marker
+   with an empty string. The transcript goes in the user message inside `<transcript>` tags.
 7. **Cleanup guards.** Treat cleanup as failed, and return the raw transcript with
    `cleaned: false`, when any of these is true: the call errors, it takes longer than 8 seconds,
    or the output is shorter than half or longer than one and a half times the raw transcript. The
    length check catches a model that answered the dictation instead of cleaning it.
 8. **History.** One D1 table: `id`, `created_at`, `client`, `raw`, `text`, `cleaned`, `asr_ms`,
    `cleanup_ms`. After each insert, delete all but the newest 50 rows. Never store audio.
-9. Deploy. Write the real URL into the Status section below, for Chris to copy into the contract.
+9. Deploy with `npx wrangler deploy`. The real URL does not change, and S0 already wrote it into
+   the contract.
 
 **Tests**
 
 - Unit tests with Vitest and a mocked `fetch`: each error code, the silence filter, each cleanup
   guard.
-- `docs/smoke.sh <real URL>` with `docs/sample.wav` returns a sensible transcript.
+- End to end on the local machine: run `npx wrangler dev`, which loads the development keys
+  from `.dev.vars`, and run `docs/smoke.sh` against it with `DICTATION_TOKEN` set to the made-up
+  development token. `docs/sample.wav` must return a sensible transcript.
+- Do not test against the deployed real URL. That needs a production token, which an agent never
+  holds. Chris runs that one check himself after the deploy:
+  `DICTATION_TOKEN=<his Mac token> docs/smoke.sh <real URL>`.
 
-**Done when** the smoke test passes against the deployed real URL and the unit tests pass.
+**Done when** the unit tests pass, the local end to end test passes, and the Worker is deployed.
+Write in Status that Chris still has to run the smoke test against the real URL.
 
 **Watch for.** The Workers free tier allows 10 milliseconds of CPU time per request. Time waiting
 on `fetch` does not count. Stream the audio body through to Groq where possible, and do not parse
@@ -103,8 +114,9 @@ each candidate's current price, limits and whether it returns a per-segment no-s
 5. `GET /v1/history`.
 6. Confirm the build now picks up B1's real `prompt/cleanup.md`.
 
-**Done when** a `PUT` of three test terms changes the transcript of a recording that contains one
-of them, and the unit tests pass.
+**Done when** the unit tests pass, and on a local `npx wrangler dev` a `PUT` of three test terms
+shows up in both prompts the Worker sends. Then apply the migration to the remote database and
+deploy. As in A1, do not test against the deployed real URL.
 
 ## Status
 
