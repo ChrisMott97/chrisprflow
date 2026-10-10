@@ -72,4 +72,7 @@ the vault. That is a decision about the vault's own automation, so Chris makes i
 
 ## Status
 
-Not started.
+E1 scrapped by Chris on 2026-10-10. The vault's `dictionary.md` has too many irrelevant terms and
+some wrong substitutions, so the dictionary starts empty and is built up from the apps (see
+`dictation-plan-g-dictionary.md`). The sync script was built and then reverted; it is in git history
+at `6ac28e3` if it is ever wanted. Do not start E1.
