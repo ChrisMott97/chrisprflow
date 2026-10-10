@@ -120,7 +120,7 @@ deploy. As in A1, do not test against the deployed real URL.
 
 ## Status
 
-**A1 built 2026-10-10. Deploy pending: Chris runs it (the auto-mode classifier blocks agent deploys).**
+**A1 built 2026-10-10. Deployed by Chris (the auto-mode classifier blocks agent deploys); first real smoke run showed the real pipeline working. The under-1 KB fix needs one more `wrangler deploy` by Chris.**
 - Built: per-client auth (`MAC_TOKEN`, `ANDROID_TOKEN`, `SYNC_TOKEN`; `mock-token` rejected in real mode),
   413/415 checks, ASR behind `src/asr.ts` (Groq `whisper-large-v3-turbo`; 429 becomes `502 asr_failed`
   with the retry time), silence filter (`NO_SPEECH_THRESHOLD = 0.6`), cleanup with `claude-haiku-5-5`
@@ -139,6 +139,6 @@ deploy. As in A1, do not test against the deployed real URL.
   `arrayBuffer()` and passed to Groq via `FormData` without parsing (not streamed). If CPU is too high,
   stream a hand-built multipart body instead.
 - Notes for later: the 10-minute limit is not checked, only the 25 MB limit (a 10 min 16 kHz mono WAV is
-  about 19 MB). A truncated or invalid audio file gets `502 asr_failed` (Groq returns 400).
+  about 19 MB). Bodies under 1 KB return `empty: true` without calling Groq (matches the mock table); other invalid audio gets `502 asr_failed` (Groq returns 400).
   `docs/smoke.sh` has no real-pipeline mode; it is outside this folder so I left it.
   A2 should replace the `""` prompt in `src/dictate.ts` and the `""` dictionary in `src/cleanup.ts`.

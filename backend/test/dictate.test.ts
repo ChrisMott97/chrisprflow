@@ -90,6 +90,13 @@ describe("auth and request checks", () => {
     expect(await r.json()).toMatchObject({ error: "too_large" });
     expect(calls).toHaveLength(0);
   });
+  it("returns empty for a body under 1 KB without calling Groq", async () => {
+    stub({});
+    const r = await dictate({ body: audio(100) });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ empty: true, text: "" });
+    expect(calls).toHaveLength(0);
+  });
   it("health needs no auth and reports real", async () => {
     const r = await worker.fetch(new Request("https://x/v1/health"), env, ctx);
     expect(await r.json()).toEqual({ ok: true, mode: "real" });

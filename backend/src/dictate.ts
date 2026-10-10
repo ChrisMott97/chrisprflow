@@ -5,6 +5,8 @@ import { err, json, ulid } from "./http";
 import type { Env } from "./index";
 
 export const NO_SPEECH_THRESHOLD = 0.6;
+// Under this size there cannot be speech; the mock table also treats it as empty.
+export const MIN_AUDIO_BYTES = 1024;
 export const MAX_BYTES = 25 * 1024 * 1024;
 export const ACCEPTED_TYPES = ["audio/wav", "audio/flac", "audio/mp4", "audio/ogg"];
 
@@ -23,6 +25,10 @@ export async function dictateReal(
   if (declared > MAX_BYTES) return err(413, "too_large", "Audio over 25 MB");
   const audio = await req.arrayBuffer();
   if (audio.byteLength > MAX_BYTES) return err(413, "too_large", "Audio over 25 MB");
+
+  if (audio.byteLength < MIN_AUDIO_BYTES) {
+    return json({ id: ulid(), text: "", raw: "", cleaned: false, empty: true, ms: { asr: 0, cleanup: 0 } });
+  }
 
   const t0 = Date.now();
   let segments;
