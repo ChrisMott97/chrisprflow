@@ -10,6 +10,14 @@ export interface HistoryRow {
   cleanupMs: number;
 }
 
+export async function listHistory(db: D1Database, limit: number) {
+  const { results } = await db
+    .prepare("SELECT id, created_at, client, raw, text, cleaned FROM history ORDER BY id DESC LIMIT ?")
+    .bind(limit)
+    .all<{ id: string; created_at: string; client: string; raw: string; text: string; cleaned: number }>();
+  return results.map((r) => ({ ...r, cleaned: r.cleaned === 1 }));
+}
+
 export async function saveHistory(db: D1Database, row: HistoryRow): Promise<void> {
   await db.batch([
     db

@@ -1,4 +1,6 @@
 import { ACCEPTED_TYPES, MAX_BYTES, dictateReal } from "./dictate";
+import { loadDictionary, parseTerms, saveDictionary } from "./dictionary";
+import { HISTORY_KEEP, listHistory } from "./history";
 import { err, json, ulid } from "./http";
 
 export interface Env {
@@ -121,6 +123,24 @@ export default {
         }
         mockDictionary = { terms: data.terms };
         return json({ count: data.terms.length });
+      }
+    }
+
+    if (env.MODE === "real") {
+      if (path === "/v1/history" && method === "GET") {
+        const n = Number(url.searchParams.get("limit") ?? HISTORY_KEEP);
+        const limit = Number.isInteger(n) && n > 0 ? Math.min(n, HISTORY_KEEP) : HISTORY_KEEP;
+        return json({ items: await listHistory(env.DB, limit) });
+      }
+      if (path === "/v1/dictionary" && method === "GET") {
+        return json({ terms: await loadDictionary(env.DB) });
+      }
+      if (path === "/v1/dictionary" && method === "PUT") {
+        if (caller !== "sync") return err(403, "forbidden", "Only the sync token may replace the dictionary");
+        const terms = parseTerms(await req.json().catch(() => null));
+        if (!terms) return err(400, "bad_request", 'Body must be {"terms": [{"term": string, "misheard": string[]}]}');
+        await saveDictionary(env.DB, terms);
+        return json({ count: terms.length });
       }
     }
 

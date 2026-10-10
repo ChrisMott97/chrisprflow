@@ -1,5 +1,6 @@
 import { AsrError, transcribe } from "./asr";
 import { cleanup } from "./cleanup";
+import { cleanupDictionary, loadDictionary, whisperPrompt, type Term } from "./dictionary";
 import { saveHistory } from "./history";
 import { err, json, ulid } from "./http";
 import type { Env } from "./index";
@@ -30,10 +31,13 @@ export async function dictateReal(
     return json({ id: ulid(), text: "", raw: "", cleaned: false, empty: true, ms: { asr: 0, cleanup: 0 } });
   }
 
+  // A failed dictionary read must not stop dictation.
+  const terms: Term[] = await loadDictionary(env.DB).catch(() => []);
+
   const t0 = Date.now();
   let segments;
   try {
-    segments = await transcribe(env, audio, type, "");
+    segments = await transcribe(env, audio, type, whisperPrompt(terms));
   } catch (e) {
     if (e instanceof AsrError) return err(502, "asr_failed", e.message);
     throw e;
@@ -55,7 +59,7 @@ export async function dictateReal(
   let cleanupMs = 0;
   if (url.searchParams.get("cleanup") !== "0") {
     const t1 = Date.now();
-    const result = await cleanup(env, raw);
+    const result = await cleanup(env, raw, cleanupDictionary(terms));
     cleanupMs = Date.now() - t1;
     if (result !== null) {
       text = result;

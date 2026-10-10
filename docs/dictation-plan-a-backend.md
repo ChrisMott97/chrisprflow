@@ -142,3 +142,23 @@ deploy. As in A1, do not test against the deployed real URL.
   about 19 MB). Bodies under 1 KB return `empty: true` without calling Groq (matches the mock table); other invalid audio gets `502 asr_failed` (Groq returns 400).
   `docs/smoke.sh` has no real-pipeline mode; it is outside this folder so I left it.
   A2 should replace the `""` prompt in `src/dictate.ts` and the `""` dictionary in `src/cleanup.ts`.
+
+**A2 built 2026-10-10 (worktree branch `worktree-a2-backend`). Not yet verified on `wrangler dev`, not migrated remotely, not deployed.**
+- Built: migration `0002_dictionary.sql` (`rank`, `term`, `misheard` JSON); `src/dictionary.ts` (load, replace-all save,
+  body validation, `whisperPrompt`, `cleanupDictionary`); `PUT`/`GET /v1/dictionary` (PUT only for `SYNC_TOKEN`, others get
+  `403 forbidden`; bad body gets `400 bad_request`); `GET /v1/history?limit=` (newest first, capped at 50); `dictate.ts`
+  reads the dictionary once per request and passes it to both Whisper and cleanup. A failed dictionary read is treated as
+  an empty dictionary so dictation still works.
+- `WHISPER_PROMPT_CHARS = 800`: terms are joined with ", " in rank order, correct spellings only, and the list stops before
+  the budget. The cleanup list is one line per term in the form `Term (mis-heard as: a, b)`, which is the form B1's
+  `cleanup.md` and test dictionary use. A term with no mis-hearings is just `Term`.
+- B1's real `prompt/cleanup.md` is what the build imports (the `{{DICTIONARY}}` marker is in it); a test checks the marker is gone.
+- Tests: 27 Vitest tests pass, `tsc` clean. New `test/dictionary.test.ts` covers PUT/GET order, 403, 400, 401, history,
+  both prompt builders, and a `/v1/dictate` call showing the terms in the Groq `prompt` field and the cleanup system prompt.
+  Migrations 0001 and 0002 apply on the local D1.
+- **Not done, Chris to do:** (1) the plan's local check: with `backend/.dev.vars` in place, run `npx wrangler dev`, `PUT` three
+  test terms with the dev sync token, then dictate `docs/sample.wav`. I was not allowed to copy `.dev.vars` into the worktree,
+  so run it from a checkout that has it (after merging this branch). (2) `npx wrangler d1 migrations apply dictation --remote`
+  then `npx wrangler deploy` from `backend/`. Do not test against the real URL from an agent.
+- B1's length-guard fix is in (Chris asked for it): the 0.5x lower bound in `src/cleanup.ts` is now skipped when raw is under
+  `MIN_LENGTH_CHECK_CHARS = 100`. The upper bound is unchanged, and an empty cleanup answer still counts as failed.
