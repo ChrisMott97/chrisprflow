@@ -1,5 +1,6 @@
 package app.dictation
 
+import android.content.Context
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -16,9 +17,11 @@ sealed interface DictateResult {
 }
 
 object DictationApi {
-    fun dictate(wav: ByteArray): DictateResult {
+    fun dictate(ctx: Context, wav: ByteArray): DictateResult {
+        val token = Settings.token(ctx)
+            ?: return DictateResult.Retryable("No token set. Open the app and enter it in Settings")
         val conn = try {
-            URL("${BuildConfig.BASE_URL}/v1/dictate").openConnection() as HttpURLConnection
+            URL("${Settings.baseUrl(ctx)}/v1/dictate").openConnection() as HttpURLConnection
         } catch (e: IOException) {
             return DictateResult.Retryable(e.message ?: "bad URL")
         }
@@ -28,7 +31,7 @@ object DictationApi {
             conn.readTimeout = 60_000
             conn.doOutput = true
             conn.setFixedLengthStreamingMode(wav.size)
-            conn.setRequestProperty("Authorization", "Bearer ${BuildConfig.TOKEN}")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "audio/wav")
             conn.setRequestProperty("X-Client", "android")
             conn.outputStream.use { it.write(wav) }

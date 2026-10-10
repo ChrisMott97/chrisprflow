@@ -5,7 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// Base URL and token come from local.properties, which git ignores.
+// The default base URL can be overridden in local.properties, which git ignores.
+// The token is not built in: it is entered on the settings screen and stored encrypted.
 val local = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -19,12 +20,10 @@ android {
         applicationId = "app.dictation"
         minSdk = 34
         targetSdk = 36
-        versionCode = 1
-        versionName = "d1"
-        val baseUrl = local.getProperty("dictation.baseUrl", "https://dictation-mock.chrisamott97.workers.dev")
-        val token = local.getProperty("dictation.token", "mock-token")
+        versionCode = 2
+        versionName = "d2"
+        val baseUrl = local.getProperty("dictation.baseUrl", "https://dictation.chrisamott97.workers.dev")
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
-        buildConfigField("String", "TOKEN", "\"$token\"")
     }
     buildFeatures { buildConfig = true }
     compileOptions {
@@ -32,4 +31,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    // Silero VAD (ONNX model bundled, runs on onnxruntime-android).
+    implementation("com.github.gkonovalov.android-vad:silero:2.0.10")
+    testImplementation("junit:junit:4.13.2")
 }

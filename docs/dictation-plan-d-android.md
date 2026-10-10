@@ -148,3 +148,42 @@ Record then Stop with `adb shell input tap`. Screen then showed "Copied to clipb
 - Recording currently lives in the Activity; D2 moves it to a foreground service. `Recorder` and
   `DictationApi` are free of Activity references and can be reused as is.
 - No tests exist yet.
+
+### D2: built, NOT finished (2026-10-10). Needs Chris to confirm the tile on the phone
+
+**Built** (worktree branch `worktree-d2-android`, `android/`, package `app.dictation`, versionName `d2`).
+- `RecordingService`: microphone-type foreground service, with a Stop action in its notification. START records,
+  STOP or the 10 minute cap (`MAX_RECORDING_MS`) ends it. Then: VAD, trim, upload, clipboard, result notification.
+- `DictationTileService`: Quick Settings tile "Dictate". Tap starts or stops the service; shows idle, recording,
+  transcribing. If the mic permission is missing it opens the app instead.
+- Silence trimming: `SilenceTrimmer` (pure, 4 unit tests, `./gradlew testDebugUnitTest -q`) cuts every silence over
+  1 s to 0.3 s, including leading and trailing. `SileroVad` gives one speech flag per 512-sample frame.
+  If VAD throws, the untrimmed audio is sent. If no frame is speech, nothing is uploaded ("No speech found").
+- Retry: after any successful upload, saved WAVs in `filesDir/pending` are sent oldest first. Recovered text goes to
+  a notification only, not the clipboard, because the clipboard holds the newer dictation. 4xx drops the file;
+  a retryable error stops the loop.
+- `Settings`: base URL (default real URL) and token, token encrypted with an Android Keystore AES-GCM key. `SettingsActivity`
+  edits both. The token is no longer in `BuildConfig`; `local.properties` may still override `dictation.baseUrl`.
+- `MainActivity` now only drives the service and mirrors `DictationState`. It also asks for the notification permission.
+
+**VAD library: `com.github.gkonovalov.android-vad:silero:2.0.10`** (JitPack, added in `settings.gradle.kts`). It bundles the
+Silero ONNX model and onnxruntime-android, targets API 24+, and takes 16 kHz 16-bit mono frames of 512 samples. It was the
+ready-made option; running the model through onnxruntime directly would only add code. It pulls in Kotlin stdlib 2.2.0, so
+the Kotlin Gradle plugin is now 2.2.0 (was 2.0.21). Smoothing is off (`silenceDurationMs = 0`).
+
+**Verified on the phone (Galaxy, `R3CX80C28AE`, Android 16):** installed, mic and notification permissions granted, Record in
+the app started the service with `isForeground=true types=0x80` (microphone), Stop ran VAD, uploaded to the mock and gave
+"Copied to clipboard / This is a mock dictation.", and the service ended cleanly. Unit tests and `assembleDebug` pass.
+
+**Not verified, and why D2 is not done:**
+1. **The tile.** `cmd statusbar add-tile` registered it (it is first in `sysui_qs_tiles`) but One UI does not show it. The plan
+   says to confirm a tile tap can start the mic service on Android 16 first. Chris: pull down the panel, pencil, Edit, add
+   "Dictate", then tap it from the home screen with the app closed. If Android refuses, stop and report.
+2. **Real backend.** I did not have the Android token (I never read `local.properties`). Chris: open the app, Settings, check the
+   URL is `https://dictation.chrisamott97.workers.dev`, and paste the Android token. **The phone currently holds `mock-token`**
+   from my test, and the URL may still be the mock one (my last save is unconfirmed). Then do the ten second pause test.
+3. VAD on real speech with a pause, the retry path and the 10 minute cap were not exercised.
+
+**For D3.** `DictationState` (phase, status, last result, listeners) is what a bubble should observe;
+`RecordingService.start/stop(ctx)` are the entry points. A fresh worktree needs a `local.properties` with at least `sdk.dir`;
+agent shells cannot copy the main one (blocked), so write one by hand.
