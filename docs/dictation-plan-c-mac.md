@@ -143,3 +143,20 @@ a short and a long dictation.
 - **Latency measured by Chris, real backend, FLAC (key release to paste):** 2.3 s dictation 1.68 s (first, cold);
   4.4 s dictation 1.12 s; 13.5 s recording with a long pause, trimmed to 4.3 s, 1.36 s. VAD cost 13 to 30 ms.
   Trimming removed about 9 s of pause and the upload stayed small, so a long pause costs nothing extra.
+
+**C3 built 2026-10-10. Not yet confirmed by Chris: the done-when is a day of real use.**
+- Built: tap vs hold on right Option (`KeyGesture`: a press shorter than 0.3 s starts a recording that runs until the next
+  press; the release of the stopping press is ignored). Escape discards the recording (the listen-only tap now also sees
+  keyDown, but only acts on Escape while recording; Escape still reaches the focused app). Icon: `mic` idle, red `mic.fill`
+  recording, orange `ellipsis.circle` while any dictation is processing. 10 minute cap: a timer stops and sends, and
+  `Recorder.stop()` also truncates to 600 s so the contract limit is never exceeded.
+- Retry: failed uploads are saved to `Pending/` as `<ms>.wav`. They are retried at launch and after each successful request,
+  oldest first, stopping at the first failure. A recovered transcript is **not pasted** (the cursor has moved on); it
+  goes to Copy Last Result with a notification. The menu shows "N recordings waiting to upload".
+- Menu: Copy Last Result (in memory, last response only), waiting count, Set API Token..., Launch at Login (toggle),
+  Quit. Launch at login uses `SMAppService`; it registers once on first run and the toggle turns it off. It registers
+  the app at its current path, so run it from where it will live (e.g. `/Applications`) before relying on it.
+- Checked: `swift test -q` 14 pass (new: `KeyGestureTests`, `PendingStoreTests`); `mac/build.sh` builds and signs.
+- Not checkable by an agent: hotkey, Escape, indicator colours, cap, retry against a real outage, login item.
+- Chris to do: copy `mac/build/Dictation.app` to `/Applications`, relaunch, and try tap-toggle, Escape, and a dictation
+  with Wi-Fi off followed by one with Wi-Fi on.
