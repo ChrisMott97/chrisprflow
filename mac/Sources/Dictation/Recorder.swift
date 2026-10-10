@@ -3,6 +3,8 @@ import AVFoundation
 /// Captures the microphone and converts to 16 kHz mono 16-bit PCM in memory.
 final class Recorder {
     static let minSamples = WavEncoder.sampleRate / 2   // 0.5 s
+    static let maxSeconds: TimeInterval = 600           // a recording stops itself here and is sent
+    static let maxSamples = Int(maxSeconds) * WavEncoder.sampleRate
 
     private let engine = AVAudioEngine()
     private let lock = NSLock()
@@ -28,7 +30,15 @@ final class Recorder {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         lock.lock(); defer { lock.unlock() }
+        if samples.count > Self.maxSamples { samples.removeSubrange(Self.maxSamples...) }   // contract limit is 10 min
         return samples.count >= Self.minSamples ? samples : nil
+    }
+
+    /// Stops and throws the audio away.
+    func cancel() {
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
+        lock.lock(); samples.removeAll(); lock.unlock()
     }
 
     private func append(_ buf: AVAudioPCMBuffer) {
