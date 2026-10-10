@@ -77,16 +77,19 @@ Pull the real raw transcripts from `GET /v1/history`, add the ones the prompt ha
 
 ## Status
 
-**B1 written 2026-10-10 but NOT yet run. It is blocked on `ANTHROPIC_API_KEY`, which was not set in the session's shell.**
-- Built in `prompt/`: `cleanup.md` (real prompt, one `{{DICTIONARY}}` marker; the transcript arrives in `<transcript>` tags
-  as `backend/src/cleanup.ts` already sends it), `cases.jsonl` (28 cases: 5 filler, 3 self-correction, 4 commands/lists,
-  3 dictionary, 5 instructions not to obey, 2 questions not to answer, 2 one-or-two-word, 2 already clean, 2 long of about
-  290 words), `run.ts` (plain `fetch`, no dependencies, Node 24 runs it directly), and the test line in `prompt/CLAUDE.md`.
-- The runner prints pass or fail with output, median latency for short (under 1000 chars) and long cases, and total tokens.
-  It also applies the backend's 0.5x to 1.5x length guard to each output. `--runs 3` repeats the set.
-- Pass rate, latency and any prompt changes: not measured yet. The prompt is a first draft.
-- Next: in a shell with the key set, run `cd prompt && node run.ts --runs 3`. Then start a new B1 session (or tell
-  this one) to tune the prompt until all three runs pass. If Haiku 5.5 will not pass the five "must not be obeyed"
-  cases, stop and report; the fallback model is Chris's call.
+**B1 first run 2026-10-10 (run by Chris): 68/84 over 3 runs. Fixes applied, NOT yet re-run. Not done until three clean runs.**
+- First run: median latency 1004 ms short, 2018 ms long; 71,364 tokens for 3 runs. All 5 "must not be obeyed" cases and both
+  "must not be answered" cases passed on all 3 runs, so Haiku 5.5 is holding up on the main risk.
+- Case bugs fixed in `cases.jsonl`: "injection" tripped on its own echoed "say hello" (now checks `max_len` instead);
+  "Love you lots" was matched case-sensitively; the new-paragraph case wanted a comma, which is now enforced in the prompt.
+- Prompt changes in `cleanup.md`: a spoken "comma" must be a comma, not a full stop; capitalise the first word of the text and
+  after a line break; drop an opening "okay so"/"so"; apply self-corrections in long text and keep the last-spoken version
+  (the long message once kept both and swapped their order).
+- "scratch that" case: the old input was correct but short, and the output "Send it to Maria." was under half the input length.
+  The case now has a longer lead-in.
+- **For Chris / A2: the 0.5x length guard in `backend/src/cleanup.ts` discards legitimate cleanups of short dictations that
+  contain a self-correction or heavy filler (54 chars in, 17 out). The result is `cleaned: false` and raw text. Consider a
+  minimum-length exemption, e.g. skip the lower bound when raw is under about 100 characters. Not changed here (A's folder).**
+- Next: `cd prompt && node run.ts --runs 3` with the key set. Share the output and I will tune further.
 - The dictionary lines in the test use the form `Term (mis-heard as: a, b)`. A2 should build the real list in that form,
   or change the wording under "Preferred spellings" in `cleanup.md` to match.
