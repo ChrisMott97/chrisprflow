@@ -98,7 +98,7 @@ a short and a long dictation.
 
 ## Status
 
-**C1 built 2026-10-10. Not yet confirmed by hand: Chris must run the hold-and-speak check.**
+**C1 done 2026-10-10. Chris confirmed the hotkey test by hand once the permissions were granted.**
 - Built: menu bar app (mic icon, Quit), right Option hold-to-talk via a listen-only CGEvent tap
   (keycode 61, device mask 0x40 so left Option is ignored), AVAudioEngine capture converted to 16 kHz
   mono Int16 and wrapped as WAV, under 0.5 s discarded, `POST /v1/dictate` with `X-Client: mac`,
@@ -117,4 +117,4 @@ a short and a long dictation.
 - VAD package and latency: not applicable until C2.
 - For C2/C3: `AppDelegate.send` holds the upload and paste logic; `Recorder.stop()` returns `[Int16]?`
   (nil means under 0.5 s), which is the place to run VAD. Pending WAVs have no retry yet (C3).
-- Not done: Done-when check by Chris.
+- Done-when check: passed (Chris, by hand, against the mock).
