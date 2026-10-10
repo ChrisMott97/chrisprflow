@@ -140,3 +140,7 @@ a short and a long dictation.
   `~/Library/Application Support/Dictation/latency.log`. **Not measured**: it needs the hotkey, mic and real token.
 - Chris to do: relaunch, paste the Mac token via the menu, dictate with a 10 s pause in the middle (set
   `debugAudio` to listen to the cuts), then read `latency.log` for a short and a long dictation.
+- **Latency measured by Chris, real backend, FLAC (key release to paste):** 2.3 s dictation 1.68 s (first, cold);
+  4.4 s dictation 1.12 s; 13.5 s recording with a long pause, trimmed to 4.3 s, 1.36 s. VAD cost 13 to 30 ms.
+  Trimming removed about 9 s of pause and the upload stayed small, so a long pause costs nothing extra.
+  Whether the 13.5 s transcript was clean (no invented words) is for Chris to confirm; the log cannot show it.
