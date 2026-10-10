@@ -24,17 +24,20 @@ class DictationTileService : TileService() {
         when (DictationState.phase) {
             Phase.RECORDING -> RecordingService.stop(this)
             Phase.PROCESSING -> Unit
-            Phase.IDLE ->
-                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    RecordingService.start(this)
+            Phase.IDLE -> {
+                // Starting the mic service straight from here is refused on Android 16 (the app is not
+                // visible), so go through a transparent activity. Without the mic permission, open the app.
+                val target = if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    RecordStartActivity::class.java
                 } else {
-                    // Permission is asked for in the app; open it.
-                    val pi = PendingIntent.getActivity(
-                        this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        PendingIntent.FLAG_IMMUTABLE,
-                    )
-                    startActivityAndCollapse(pi)
+                    MainActivity::class.java
                 }
+                val pi = PendingIntent.getActivity(
+                    this, 0, Intent(this, target).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    PendingIntent.FLAG_IMMUTABLE,
+                )
+                startActivityAndCollapse(pi)
+            }
         }
     }
 

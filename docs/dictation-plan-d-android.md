@@ -149,7 +149,16 @@ Record then Stop with `adb shell input tap`. Screen then showed "Copied to clipb
   `DictationApi` are free of Activity references and can be reused as is.
 - No tests exist yet.
 
-### D2: built, NOT finished (2026-10-10). Needs Chris to confirm the tile on the phone
+### D2: built, tile fixed (2026-10-10). Needs Chris's real-speech check through the real backend
+
+**Tile fix (later the same day).** Tapping the tile used to do nothing and then crash the app. Cause, from logcat:
+`SecurityException: Starting FGS with type microphone ... requires permissions ... and the app must be in the eligible
+state`. On Android 16 a tile tap alone does not make the app eligible to start a microphone service (RECORD_AUDIO is a
+while-in-use permission). Fix: the tile launches `RecordStartActivity`, a transparent activity, through
+`startActivityAndCollapse`; its `onResume` starts the service and finishes. Stopping from the tile needs no activity.
+Verified on the phone: tile tap from the home screen gave `isForeground=true types=0x80`, a second tap stopped it, no
+crash, "No speech found" for a silent recording (VAD works, nothing uploaded). Chris's tile appears at the very bottom
+of the One UI panel, under the sliders, as its own section.
 
 **Built** (worktree branch `worktree-d2-android`, `android/`, package `app.dictation`, versionName `d2`).
 - `RecordingService`: microphone-type foreground service, with a Stop action in its notification. START records,
@@ -175,14 +184,10 @@ the Kotlin Gradle plugin is now 2.2.0 (was 2.0.21). Smoothing is off (`silenceDu
 the app started the service with `isForeground=true types=0x80` (microphone), Stop ran VAD, uploaded to the mock and gave
 "Copied to clipboard / This is a mock dictation.", and the service ended cleanly. Unit tests and `assembleDebug` pass.
 
-**Not verified, and why D2 is not done:**
-1. **The tile.** `cmd statusbar add-tile` registered it (it is first in `sysui_qs_tiles`) but One UI does not show it. The plan
-   says to confirm a tile tap can start the mic service on Android 16 first. Chris: pull down the panel, pencil, Edit, add
-   "Dictate", then tap it from the home screen with the app closed. If Android refuses, stop and report.
-2. **Real backend.** I did not have the Android token (I never read `local.properties`). Chris: open the app, Settings, check the
-   URL is `https://dictation.chrisamott97.workers.dev`, and paste the Android token. **The phone currently holds `mock-token`**
-   from my test, and the URL may still be the mock one (my last save is unconfirmed). Then do the ten second pause test.
-3. VAD on real speech with a pause, the retry path and the 10 minute cap were not exercised.
+**Not verified, so D2's "done when" is not yet met:**
+1. **Real speech through the real backend.** Chris has entered the production token. Still to do: tap the tile, speak with a ten
+   second pause, tap again, and check the text comes back clean. I cannot speak into the phone.
+2. The retry path and the 10 minute cap were not exercised.
 
 **For D3.** `DictationState` (phase, status, last result, listeners) is what a bubble should observe;
 `RecordingService.start/stop(ctx)` are the entry points. A fresh worktree needs a `local.properties` with at least `sdk.dir`;
