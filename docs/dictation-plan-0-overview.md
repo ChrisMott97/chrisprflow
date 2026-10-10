@@ -126,6 +126,45 @@ Each file carries the vault's frontmatter. It does no harm in the repo and can b
 | Android refuses the microphone service from a tile | D2, first step | Report and stop. The bubble in D3 may need to come first |
 | An app refuses accessibility text insertion | D4 | That app falls back to the clipboard |
 
+## Phase 2: sharing the tool
+
+Planned on 2026-10-10, after the first build. The goal is that friends can use the tool, and that
+a stranger can set up their own backend from the README. Nothing here is started.
+
+| File | Read by |
+|---|---|
+| `dictation-plan-costs.md` | Chris, F1, F3, H2 |
+| `dictation-plan-contract-changes.md` | Chris. A proposal, not the contract |
+| `dictation-plan-f-users.md` | F1, F2, F3 |
+| `dictation-plan-g-dictionary.md` | G1, G2, G3, G4 |
+| `dictation-plan-h-sharing.md` | H1, H2 |
+
+| Session | Does | Folder | Waits on agents | Waits on Chris |
+|---|---|---|---|---|
+| F1 | Usage log and cost report | `backend/` | Nothing | Nothing |
+| F2 | Per-user tokens, dictionary and history | `backend/` | F1 | Contract changes 1 and 2 |
+| F3 | Daily limits, usage report per person | `backend/` | F2 | Contract change 3 |
+| G1 | Routes to add and remove one term | `backend/` | F2 | Contract changes 4 and 5 |
+| G2 | Mac: add a term, fix a word, 429 handling | `mac/` | G1 | Nothing |
+| G3 | Android: the same screens | `android/` | G1 | Nothing |
+| G4 | Mac: suggest a term when a word is fixed. An experiment | `mac/` | G2 | Decide it is worth building |
+| H1 | README and self-hosting | Several | Nothing | Nothing |
+| H2 | Release builds and steps for friends | Several | F3, G2 | Signing, history and Groq terms decided |
+
+**Order when running one at a time:** E1, F1, F2, G1, G2, F3, H1, G3, H2. G4 is optional and last.
+
+- **F1 first.** It is small, changes no route, and replaces the cost estimates with measured
+  numbers from Chris's own use.
+- **F2 is the session that makes sharing safe.** Before it, any token can read every dictation in
+  history, and one dictionary is used for everyone.
+- **No friend gets a token before F3 and G2 are done.**
+- **Chris applies each contract change by hand** before the session that needs it, from
+  `dictation-plan-contract-changes.md`.
+- **Chris runs every script against the real database.** As before, an agent never holds a
+  production token.
+
+The diagram `dictation-plan-order.svg` shows the first build only.
+
 ## Related
 
 - [[topics/personal-voice-dictation-tool]] - the design, the cost and the reasons behind each

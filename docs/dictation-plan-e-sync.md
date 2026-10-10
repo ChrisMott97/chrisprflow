@@ -54,6 +54,17 @@ term written as a wikilink.
 **Done when** `--dry-run` against the real file shows no private column content, Chris has read
 that output, and a real run returns the expected `count`.
 
+## What happens to this script later
+
+E1 is built as written above. Nothing in it changes.
+
+- **Until session G2,** the vault file is the source of truth. To add a term, edit `dictionary.md`
+  and run the script.
+- **After G2,** terms are added in the apps and the backend is the source of truth. Chris runs the
+  script one last time and stops using it. `PUT /v1/dictionary` replaces the whole list, so a
+  later run would delete every term added in the apps.
+- The plan for adding terms in the apps is `dictation-plan-g-dictionary.md`.
+
 ## Not decided
 
 When the script runs. The options are by hand, on a timer, or after each inbox processing run in
