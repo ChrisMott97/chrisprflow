@@ -36,9 +36,26 @@ class SilenceTrimmerTest {
     }
 
     @Test
-    fun leadingAndTrailingSilenceAreCutToo() {
+    fun leadingAndTrailingSilenceAreCutToTwoTenths() {
         val f = flags(false to 64, true to 10, false to 64)
         val out = SilenceTrimmer.trim(pcm(f.size), f)
-        assertEquals((2 * SilenceTrimmer.KEEP_SILENCE_SAMPLES + 10 * frame) * 2, out.size)
+        assertEquals((2 * SilenceTrimmer.EDGE_SILENCE_SAMPLES + 10 * frame) * 2, out.size)
+    }
+
+    @Test
+    fun shortTrailingSilenceIsCutToo() {
+        val f = flags(true to 10, false to 20) // 0.64 s of silence at the end
+        val out = SilenceTrimmer.trim(pcm(f.size), f)
+        assertEquals((10 * frame + SilenceTrimmer.EDGE_SILENCE_SAMPLES) * 2, out.size)
+    }
+
+    @Test
+    fun trailingSilenceKeepsThePartNextToTheSpeech() {
+        val f = flags(false to 20, true to 10, false to 20)
+        val p = ByteArray(f.size * frame * 2) { (it / (frame * 2)).toByte() } // each frame holds its index
+        val out = SilenceTrimmer.trim(p, f)
+        val edge = SilenceTrimmer.EDGE_SILENCE_SAMPLES * 2
+        assertEquals(19.toByte(), out[edge - 1]) // leading: the last silent frame before the speech
+        assertEquals(30.toByte(), out[out.size - edge]) // trailing: the first silent frame after it
     }
 }
