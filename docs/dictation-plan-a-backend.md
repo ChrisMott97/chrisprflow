@@ -120,5 +120,25 @@ deploy. As in A1, do not test against the deployed real URL.
 
 ## Status
 
-Not started. Each session writes here: what was built, what was not, the deployed URL, measured
-CPU time and latency, and anything the next session must know.
+**A1 built 2026-10-10. Deploy pending: Chris runs it (the auto-mode classifier blocks agent deploys).**
+- Built: per-client auth (`MAC_TOKEN`, `ANDROID_TOKEN`, `SYNC_TOKEN`; `mock-token` rejected in real mode),
+  413/415 checks, ASR behind `src/asr.ts` (Groq `whisper-large-v3-turbo`; 429 becomes `502 asr_failed`
+  with the retry time), silence filter (`NO_SPEECH_THRESHOLD = 0.6`), cleanup with `claude-haiku-5-5`
+  and the three guards (error, 8 s timeout, length 0.5x to 1.5x), D1 `history` capped at 50 rows.
+  Mock behaviour unchanged.
+- D1 database `dictation` created; id is in `backend/wrangler.toml`. Migration `0001_history.sql`
+  applied locally and to the remote database.
+- Tests: 18 Vitest tests pass (`npm test`); `tsc` clean. Local `wrangler dev` end to end with
+  `docs/sample.wav`: 200, "This is a short test of the dictation tool.", asr 197 ms, cleanup 1309 ms
+  (cold), `?cleanup=0` 134 ms total, 415 and history rows correct.
+- Not done: `wrangler deploy`. Chris runs it from `backend/`, then
+  `DICTATION_TOKEN=<Mac token> docs/smoke.sh <real URL>` (only the health row is meaningful there;
+  its dictate rows assert mock text, so also try one `curl` of `docs/sample.wav`).
+- CPU time: not measurable in local dev. Read it from the Cloudflare dashboard (Workers, dictation,
+  Metrics) after a few real requests; the 10 ms free-tier limit is unverified. Audio is read with
+  `arrayBuffer()` and passed to Groq via `FormData` without parsing (not streamed). If CPU is too high,
+  stream a hand-built multipart body instead.
+- Notes for later: the 10-minute limit is not checked, only the 25 MB limit (a 10 min 16 kHz mono WAV is
+  about 19 MB). A truncated or invalid audio file gets `502 asr_failed` (Groq returns 400).
+  `docs/smoke.sh` has no real-pipeline mode; it is outside this folder so I left it.
+  A2 should replace the `""` prompt in `src/dictate.ts` and the `""` dictionary in `src/cleanup.ts`.

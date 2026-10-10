@@ -2,9 +2,17 @@ name = "dictation"
 main = "src/index.ts"
 compatibility_date = "2025-09-01"
 
+# prompt/cleanup.md is imported as a text module.
+rules = [{ type = "Text", globs = ["**/*.md"], fallthrough = true }]
+
 # Top level = the real Worker, so `wrangler` with no --env targets it.
 [vars]
 MODE = "real"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dictation"
+database_id = "e175b9ea-20da-4dd4-b4a6-a68a3634c115"
 
 [env.mock]
 name = "dictation-mock"

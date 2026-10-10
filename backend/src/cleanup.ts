@@ -1,0 +1,45 @@
+import cleanupPrompt from "../../prompt/cleanup.md";
+
+export const CLEANUP_MODEL = "claude-haiku-5-5";
+export const CLEANUP_TIMEOUT_MS = 8000;
+export const MIN_LENGTH_RATIO = 0.5;
+export const MAX_LENGTH_RATIO = 1.5;
+const MAX_TOKENS = 4096;
+
+interface CleanupEnv {
+  ANTHROPIC_API_KEY: string;
+}
+
+/** Returns the cleaned text, or null when cleanup failed any guard. */
+export async function cleanup(env: CleanupEnv, raw: string): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: CLEANUP_MODEL,
+        max_tokens: MAX_TOKENS,
+        // A1 has no dictionary yet; A2 fills this in.
+        system: cleanupPrompt.replace("{{DICTIONARY}}", ""),
+        messages: [{ role: "user", content: `<transcript>${raw}</transcript>` }],
+      }),
+      signal: AbortSignal.timeout(CLEANUP_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+    const text = (data.content ?? [])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("")
+      .trim();
+    if (text.length < raw.length * MIN_LENGTH_RATIO) return null;
+    if (text.length > raw.length * MAX_LENGTH_RATIO) return null;
+    return text;
+  } catch {
+    return null;
+  }
+}

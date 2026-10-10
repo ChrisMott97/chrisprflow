@@ -1,42 +1,53 @@
-interface Env {
+import { ACCEPTED_TYPES, MAX_BYTES, dictateReal } from "./dictate";
+import { err, json, ulid } from "./http";
+
+export interface Env {
   MODE: "mock" | "real";
+  DB: D1Database;
+  GROQ_API_KEY: string;
+  ANTHROPIC_API_KEY: string;
+  MAC_TOKEN: string;
+  ANDROID_TOKEN: string;
+  SYNC_TOKEN: string;
 }
 
 const MOCK_TOKEN = "mock-token";
 const MOCK_MIN_BYTES = 1024;
-const ACCEPTED_TYPES = ["audio/wav", "audio/flac", "audio/mp4", "audio/ogg"];
-const MAX_BYTES = 25 * 1024 * 1024;
-
-const json = (body: unknown, status = 200): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-
-const err = (status: number, error: string, message: string): Response =>
-  json({ error, message }, status);
 
 // Mock-only in-memory dictionary (resets with the isolate).
 let mockDictionary: { terms: { term: string; misheard: string[] }[] } = { terms: [] };
 
-function ulid(): string {
-  const chars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-  let t = Date.now();
-  let time = "";
-  for (let i = 0; i < 10; i++) {
-    time = chars[t % 32] + time;
-    t = Math.floor(t / 32);
-  }
-  const rand = crypto.getRandomValues(new Uint8Array(16));
-  return time + Array.from(rand, (b) => chars[b % 32]).join("");
+async function sameToken(a: string, b: string | undefined): Promise<boolean> {
+  if (!a || !b) return false;
+  const enc = new TextEncoder();
+  const [da, db] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(a)),
+    crypto.subtle.digest("SHA-256", enc.encode(b)),
+  ]);
+  // Digests are fixed length, so this loop takes the same time for any input.
+  const x = new Uint8Array(da);
+  const y = new Uint8Array(db);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
 }
 
-function authorised(req: Request, env: Env): boolean {
+/** Returns who is calling ("mac", "android", "sync", "mock"), or null. */
+async function authorise(req: Request, env: Env): Promise<string | null> {
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!token) return false;
-  // S0: only the mock token is known. A1 adds the real per-client tokens.
-  return env.MODE === "mock" && token === MOCK_TOKEN;
+  if (!token) return null;
+  if (env.MODE === "mock") return token === MOCK_TOKEN ? "mock" : null;
+  const checks: [string, string | undefined][] = [
+    ["mac", env.MAC_TOKEN],
+    ["android", env.ANDROID_TOKEN],
+    ["sync", env.SYNC_TOKEN],
+  ];
+  let caller: string | null = null;
+  for (const [name, secret] of checks) {
+    if (await sameToken(token, secret)) caller = name;
+  }
+  return caller;
 }
 
 async function dictateMock(req: Request, url: URL): Promise<Response> {
@@ -70,7 +81,7 @@ async function dictateMock(req: Request, url: URL): Promise<Response> {
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     const { pathname: path } = url;
     const method = req.method;
@@ -79,13 +90,14 @@ export default {
       return json({ ok: true, mode: env.MODE });
     }
 
-    if (!authorised(req, env)) {
+    const caller = await authorise(req, env);
+    if (!caller) {
       return err(401, "unauthorized", "Missing or unknown token");
     }
 
     if (path === "/v1/dictate" && method === "POST") {
       if (env.MODE === "mock") return dictateMock(req, url);
-      return err(501, "not_implemented", "Pipeline not built yet");
+      return dictateReal(req, url, env, ctx, caller);
     }
 
     if (env.MODE === "mock") {
