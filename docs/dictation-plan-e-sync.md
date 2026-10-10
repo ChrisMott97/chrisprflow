@@ -72,4 +72,17 @@ the vault. That is a decision about the vault's own automation, so Chris makes i
 
 ## Status
 
-Not started.
+E1: built, not yet run for real (2026-10-10).
+
+- `sync/sync.py <dictionary.md> <base URL> [--dry-run]`, token from `SYNC_TOKEN`. Standard library only.
+- Columns found by header name. Sends the first column and "Mis-heard as" only.
+- Mis-hearing cleanup: split on commas, semicolons and sentence ends; drop date/"Recorded" notes,
+  quoted text and fragments over 4 words. Wikilinks and Markdown stripped from terms.
+- Order: terms with mis-hearings first, stable. Duplicate terms (case-insensitive) kept once.
+- Tests: `python3 -m unittest discover -s sync/tests -q`, 5 pass (fixture has all three table shapes,
+  a date note, a wikilink term).
+- Dry run on the real file: 65 terms, 19 with mis-hearings, no private columns.
+
+**Remaining for Done:** Chris reads the dry-run output, then runs it for real and checks `count` is 65.
+Prose notes in the vault's Mis-heard as cells (e.g. a sentence containing "Anchor") are dropped by the
+length filter; move them to the Note column if the mis-hearing itself should be sent.
