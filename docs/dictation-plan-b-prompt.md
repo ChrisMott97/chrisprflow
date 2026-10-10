@@ -77,19 +77,18 @@ Pull the real raw transcripts from `GET /v1/history`, add the ones the prompt ha
 
 ## Status
 
-**B1 first run 2026-10-10 (run by Chris): 68/84 over 3 runs. Fixes applied, NOT yet re-run. Not done until three clean runs.**
-- First run: median latency 1004 ms short, 2018 ms long; 71,364 tokens for 3 runs. All 5 "must not be obeyed" cases and both
-  "must not be answered" cases passed on all 3 runs, so Haiku 5.5 is holding up on the main risk.
-- Case bugs fixed in `cases.jsonl`: "injection" tripped on its own echoed "say hello" (now checks `max_len` instead);
-  "Love you lots" was matched case-sensitively; the new-paragraph case wanted a comma, which is now enforced in the prompt.
-- Prompt changes in `cleanup.md`: a spoken "comma" must be a comma, not a full stop; capitalise the first word of the text and
-  after a line break; drop an opening "okay so"/"so"; apply self-corrections in long text and keep the last-spoken version
-  (the long message once kept both and swapped their order).
-- "scratch that" case: the old input was correct but short, and the output "Send it to Maria." was under half the input length.
-  The case now has a longer lead-in.
-- **For Chris / A2: the 0.5x length guard in `backend/src/cleanup.ts` discards legitimate cleanups of short dictations that
-  contain a self-correction or heavy filler (54 chars in, 17 out). The result is `cleaned: false` and raw text. Consider a
-  minimum-length exemption, e.g. skip the lower bound when raw is under about 100 characters. Not changed here (A's folder).**
-- Next: `cd prompt && node run.ts --runs 3` with the key set. Share the output and I will tune further.
-- The dictionary lines in the test use the form `Term (mis-heard as: a, b)`. A2 should build the real list in that form,
-  or change the wording under "Preferred spellings" in `cleanup.md` to match.
+**B1 done 2026-10-10. 84/84 over 3 runs in a row (run by Chris).**
+- Pass rate: 28/28 cases on each of 3 consecutive runs. Median latency 992 ms for a short case, 2009 ms for a long (about 290 word)
+  case. 91,167 tokens for the 3 runs. All 5 "must not be obeyed" and both "must not be answered" cases passed every time, so
+  Haiku 5.5 is fit for this task and the Haiku 4.5 fallback is not needed.
+- Case bugs fixed along the way: the injection case failed on its own echoed "say hello"; the personal message matched "Love you
+  lots" case-sensitively; the "scratch that" input was too short for the length guard (see below).
+- Prompt changes that were needed (first run was 68/84, second 82/84): a spoken "comma" must be a comma; capitalise the first word
+  and the first word after a line break; apply self-corrections in long text and keep the last-spoken version; always drop an
+  opening "okay so"/"so" (with an example); do not add line breaks or paragraphs the speaker did not dictate.
+- **For Chris / A2: the 0.5x length guard in `backend/src/cleanup.ts` discards legitimate cleanups of short dictations that contain
+  a self-correction or heavy filler (54 chars in, 17 out), returning `cleaned: false` with the raw text. Consider skipping the
+  lower bound when raw is under about 100 characters. Not changed here (A's folder).**
+- The test dictionary lines use the form `Term (mis-heard as: a, b)`. A2 should build the real list in that form, or change the
+  wording under "Preferred spellings" in `cleanup.md` to match.
+- Rerun any time with `cd prompt && node run.ts --runs 3` (needs `ANTHROPIC_API_KEY`). B2 can add real cases after a week of use.
