@@ -11,7 +11,7 @@ interface CleanupEnv {
 }
 
 /** Returns the cleaned text, or null when cleanup failed any guard. */
-export async function cleanup(env: CleanupEnv, raw: string): Promise<string | null> {
+export async function cleanup(env: CleanupEnv, raw: string, dictionary: string): Promise<string | null> {
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -23,8 +23,8 @@ export async function cleanup(env: CleanupEnv, raw: string): Promise<string | nu
       body: JSON.stringify({
         model: CLEANUP_MODEL,
         max_tokens: MAX_TOKENS,
-        // A1 has no dictionary yet; A2 fills this in.
-        system: cleanupPrompt.replace("{{DICTIONARY}}", ""),
+        // A function replacer, so "$&" and friends in a term are not treated as patterns.
+        system: cleanupPrompt.replace("{{DICTIONARY}}", () => dictionary),
         messages: [{ role: "user", content: `<transcript>${raw}</transcript>` }],
       }),
       signal: AbortSignal.timeout(CLEANUP_TIMEOUT_MS),
