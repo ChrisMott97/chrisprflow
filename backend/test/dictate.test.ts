@@ -176,7 +176,6 @@ describe("cleanup", () => {
   const guards: [string, Parameters<typeof stub>[0]["cleanup"]][] = [
     ["API error", new Response("x", { status: 500 })],
     ["network error", new Error("net")],
-    ["too short", "Hi"],
     ["too long", "Hello world. ".repeat(10)],
   ];
   for (const [name, cleanup] of guards) {
@@ -187,6 +186,20 @@ describe("cleanup", () => {
       expect(await r.json()).toMatchObject({ text: "hello world", cleaned: false });
     });
   }
+  it("falls back to raw when a long transcript shrinks below half", async () => {
+    const raw = "word ".repeat(30).trim();
+    stub({ segments: [{ text: raw, no_speech_prob: 0 }], cleanup: "Word." });
+    expect(await (await dictate()).json()).toMatchObject({ text: raw, cleaned: false });
+  });
+  it("accepts a big shrink on a short transcript", async () => {
+    const raw = "meet at tuesday no wait wednesday at um three";
+    stub({ segments: [{ text: raw, no_speech_prob: 0 }], cleanup: "Meet Wednesday at 3." });
+    expect(await (await dictate()).json()).toMatchObject({ text: "Meet Wednesday at 3.", cleaned: true });
+  });
+  it("falls back to raw on empty cleanup output", async () => {
+    stub({ cleanup: "" });
+    expect(await (await dictate()).json()).toMatchObject({ text: "hello world", cleaned: false });
+  });
   it("falls back to raw on timeout", async () => {
     vi.stubGlobal(
       "fetch",

@@ -4,6 +4,9 @@ export const CLEANUP_MODEL = "claude-haiku-5-5";
 export const CLEANUP_TIMEOUT_MS = 8000;
 export const MIN_LENGTH_RATIO = 0.5;
 export const MAX_LENGTH_RATIO = 1.5;
+// Below this many characters the lower bound is skipped: a short dictation with a
+// self-correction or heavy filler legitimately shrinks by more than half.
+export const MIN_LENGTH_CHECK_CHARS = 100;
 const MAX_TOKENS = 4096;
 
 interface CleanupEnv {
@@ -36,7 +39,9 @@ export async function cleanup(env: CleanupEnv, raw: string, dictionary: string):
       .map((b) => b.text ?? "")
       .join("")
       .trim();
-    if (text.length < raw.length * MIN_LENGTH_RATIO) return null;
+    // An empty answer is never a cleanup, even for short input.
+    if (!text) return null;
+    if (raw.length >= MIN_LENGTH_CHECK_CHARS && text.length < raw.length * MIN_LENGTH_RATIO) return null;
     if (text.length > raw.length * MAX_LENGTH_RATIO) return null;
     return text;
   } catch {

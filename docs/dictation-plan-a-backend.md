@@ -160,6 +160,5 @@ deploy. As in A1, do not test against the deployed real URL.
   test terms with the dev sync token, then dictate `docs/sample.wav`. I was not allowed to copy `.dev.vars` into the worktree,
   so run it from a checkout that has it (after merging this branch). (2) `npx wrangler d1 migrations apply dictation --remote`
   then `npx wrangler deploy` from `backend/`. Do not test against the real URL from an agent.
-- Not changed, still open from B1: the 0.5x lower length guard in `src/cleanup.ts` discards good cleanups of short dictations
-  with a self-correction. Left alone because it was not in A2's scope; suggested fix is to skip the lower bound when raw is
-  under about 100 characters.
+- B1's length-guard fix is in (Chris asked for it): the 0.5x lower bound in `src/cleanup.ts` is now skipped when raw is under
+  `MIN_LENGTH_CHECK_CHARS = 100`. The upper bound is unchanged, and an empty cleanup answer still counts as failed.
