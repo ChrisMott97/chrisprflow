@@ -1,0 +1,13 @@
+name = "dictation"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Top level = the real Worker, so `wrangler` with no --env targets it.
+[vars]
+MODE = "real"
+
+[env.mock]
+name = "dictation-mock"
+
+[env.mock.vars]
+MODE = "mock"

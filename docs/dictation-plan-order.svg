@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 790" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Dictation tool build order: sessions by workstream, with manual steps</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <!-- columns -->
+  <rect x="0" y="0" width="720" height="790" fill="#ffffff"/>
+  <rect x="0" y="0" width="180" height="700" fill="#eef6ff"/>
+  <rect x="180" y="0" width="180" height="700" fill="#f5f3ff"/>
+  <rect x="360" y="0" width="180" height="700" fill="#f1f5f9"/>
+  <rect x="540" y="0" width="180" height="700" fill="#ecfdf5"/>
+  <g text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">
+    <text x="90" y="30">Backend</text>
+    <text x="270" y="30">Prompt</text>
+    <text x="450" y="30">Mac</text>
+    <text x="630" y="30">Android</text>
+  </g>
+
+  <!-- arrows (drawn first, bars sit on top) -->
+  <g stroke="#334155" stroke-width="2" fill="none" marker-end="url(#a)">
+    <path d="M360 80 V96"/>
+    <path d="M90 148 V166"/>
+    <path d="M270 148 V166"/>
+    <path d="M450 148 V166"/>
+    <path d="M630 148 V166"/>
+    <path d="M90 212 V236"/>
+    <path d="M270 212 V236"/>
+    <path d="M450 212 V236"/>
+    <path d="M630 212 V236"/>
+    <path d="M90 298 V326"/>
+    <path d="M450 298 V326"/>
+    <path d="M630 298 V326"/>
+    <path d="M90 364 V392"/>
+    <path d="M450 364 V392"/>
+    <path d="M630 364 V392"/>
+    <path d="M270 298 V379 H130 V392"/>
+    <path d="M90 454 V506"/>
+    <path d="M450 454 V506"/>
+    <path d="M630 454 V506"/>
+    <path d="M630 568 V620"/>
+  </g>
+
+  <!-- manual bars -->
+  <g fill="#fde68a" stroke="#334155" stroke-width="1.5">
+    <rect x="10" y="52" width="700" height="28" rx="6"/>
+    <rect x="10" y="168" width="340" height="44" rx="6"/>
+    <rect x="370" y="168" width="160" height="44" rx="6"/>
+    <rect x="550" y="168" width="160" height="44" rx="6"/>
+    <rect x="550" y="470" width="160" height="26" rx="6"/>
+    <rect x="550" y="576" width="160" height="38" rx="6"/>
+  </g>
+  <g text-anchor="middle" font-size="12.5" fill="#78350f">
+    <text x="360" y="71"><tspan font-weight="700">You:</tspan> create the repo, copy the plan files in, Cloudflare account, wrangler login</text>
+    <text x="180" y="186"><tspan font-weight="700">You:</tspan> Groq key, Anthropic key, spend limits,</text>
+    <text x="180" y="203">Worker secrets</text>
+    <text x="450" y="186"><tspan font-weight="700">You:</tspan> Xcode, hotkey,</text>
+    <text x="450" y="203">Mac permissions</text>
+    <text x="630" y="186"><tspan font-weight="700">You:</tspan> Android Studio,</text>
+    <text x="630" y="203">USB debugging</text>
+    <text x="630" y="488"><tspan font-weight="700">You:</tspan> overlay permission</text>
+    <text x="630" y="592"><tspan font-weight="700">You:</tspan> accessibility on,</text>
+    <text x="630" y="607">battery unrestricted</text>
+  </g>
+
+  <!-- gate -->
+  <rect x="10" y="328" width="700" height="36" rx="6" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+  <text x="360" y="351" text-anchor="middle" font-size="13" fill="#0f172a"><tspan font-weight="700">Backend deployed.</tspan> Clients switch from the mock to the real backend.</text>
+  <text x="200" y="375" text-anchor="middle" font-size="11.5" fill="#475569">final prompt</text>
+
+  <!-- session boxes -->
+  <g stroke="#334155" stroke-width="1.5" fill="#ffffff">
+    <rect x="10" y="98" width="700" height="50" rx="8"/>
+    <rect x="10" y="238" width="160" height="60" rx="8"/>
+    <rect x="190" y="238" width="160" height="60" rx="8"/>
+    <rect x="370" y="238" width="160" height="60" rx="8"/>
+    <rect x="550" y="238" width="160" height="60" rx="8"/>
+    <rect x="10" y="394" width="160" height="60" rx="8"/>
+    <rect x="370" y="394" width="160" height="60" rx="8" stroke="#15803d" stroke-width="3"/>
+    <rect x="550" y="394" width="160" height="60" rx="8"/>
+    <rect x="10" y="508" width="160" height="60" rx="8"/>
+    <rect x="370" y="508" width="160" height="60" rx="8"/>
+    <rect x="550" y="508" width="160" height="60" rx="8"/>
+    <rect x="550" y="622" width="160" height="60" rx="8"/>
+  </g>
+  <g text-anchor="middle" fill="#0f172a">
+    <g font-size="14" font-weight="700">
+      <text x="360" y="120">S0. Setup</text>
+      <text x="90" y="260">A1. Backend live</text>
+      <text x="270" y="260">B1. Prompt + tests</text>
+      <text x="450" y="260">C1. Mac basic</text>
+      <text x="630" y="260">D1. Android basic</text>
+      <text x="90" y="416">A2. Backend data</text>
+      <text x="450" y="414">C2. Mac trimming</text>
+      <text x="630" y="416">D2. Tile + trimming</text>
+      <text x="90" y="530">E1. Dictionary sync</text>
+      <text x="450" y="530">C3. Mac controls</text>
+      <text x="630" y="530">D3. Overlay bubble</text>
+      <text x="630" y="644">D4. Accessibility</text>
+    </g>
+    <g font-size="12" fill="#334155">
+      <text x="360" y="138">Repo layout, API contract filled in, mock backend deployed</text>
+      <text x="90" y="277">Groq + cleanup,</text>
+      <text x="90" y="291">deployed</text>
+      <text x="270" y="277">Haiku 5.5 prompt,</text>
+      <text x="270" y="291">25 to 30 test cases</text>
+      <text x="450" y="277">Record, upload, paste</text>
+      <text x="450" y="291">against the mock</text>
+      <text x="630" y="277">Record, upload, copy</text>
+      <text x="630" y="291">against the mock</text>
+      <text x="90" y="433">Dictionary, history,</text>
+      <text x="90" y="447">final prompt</text>
+      <text x="450" y="430">Cut silences (VAD)</text>
+      <text x="630" y="433">Quick Settings tile,</text>
+      <text x="630" y="447">cut silences (VAD)</text>
+      <text x="90" y="547">Script: vault file</text>
+      <text x="90" y="561">to backend</text>
+      <text x="450" y="547">Tap to toggle, cancel,</text>
+      <text x="450" y="561">indicator, retry</text>
+      <text x="630" y="547">Floating button,</text>
+      <text x="630" y="561">result to clipboard</text>
+      <text x="630" y="661">Insert text into the</text>
+      <text x="630" y="675">focused field</text>
+    </g>
+    <text x="450" y="446" font-size="12" font-weight="700" fill="#15803d">Mac usable daily</text>
+  </g>
+
+  <!-- legend -->
+  <g font-size="12.5" fill="#334155">
+    <rect x="14" y="716" width="22" height="14" rx="3" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="44" y="728">One fresh Claude Code session</text>
+    <rect x="254" y="716" width="22" height="14" rx="3" fill="#fde68a" stroke="#334155" stroke-width="1.5"/>
+    <text x="284" y="728">You do this by hand</text>
+    <path d="M440 723 H464" stroke="#334155" stroke-width="2" marker-end="url(#a)"/>
+    <text x="474" y="728">Must finish first</text>
+    <text x="14" y="756">Boxes on the same row can run at the same time. Read top to bottom.</text>
+    <text x="14" y="774">A2 also needs B1. C2 and D2 also need A1.</text>
+  </g>
+</svg>

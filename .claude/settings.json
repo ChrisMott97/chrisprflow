@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm test *)",
+      "Bash(npm run test *)",
+      "Bash(npx wrangler dev *)",
+      "Bash(docs/smoke.sh *)",
+      "Bash(./gradlew *)",
+      "Bash(xcodebuild *)",
+      "Bash(adb install *)"
+    ],
+    "deny": [
+      "Read(./backend/.dev.vars)",
+      "Read(./.dev.vars)",
+      "Read(./android/local.properties)",
+      "Read(**/node_modules/**)",
+      "Read(**/.wrangler/**)",
+      "Read(**/build/**)",
+      "Read(**/.build/**)",
+      "Read(**/DerivedData/**)",
+      "Edit(./docs/dictation-plan-contract.md)"
+    ]
+  }
+}

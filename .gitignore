@@ -1,0 +1,24 @@
+# secrets
+.dev.vars
+**/.dev.vars
+local.properties
+**/local.properties
+.env
+.env.*
+# build output
+node_modules/
+.wrangler/
+build/
+.build/
+DerivedData/
+.gradle/
+*.apk
+*.xcuserstate
+.DS_Store
+# audio (the one sample is allowed)
+*.wav
+*.flac
+*.m4a
+*.mp3
+*.ogg
+!docs/sample.wav
